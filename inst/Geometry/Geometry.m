@@ -36,7 +36,7 @@ classdef Geometry
         
         function [x,y,z] = eval_point(parametric_coordinate_array)
             
-            assert(obj.rank == numel(parametric_coordinate_array),"Error: invalid number of parameter")
+            assert(obj.rank == numel(parametric_coordinate_array),"Error: invalid number of parameters.")
                         
             switch obj.rank
                 
