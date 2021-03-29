@@ -17,7 +17,6 @@ classdef Assembler
 
             assert(dimensions > 0,"Error: the solutions' dimension must be greater than 0.");
             obj.dimensions = dimensions;
-
             obj.domain = domain;
         end
         
