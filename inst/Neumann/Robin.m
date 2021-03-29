@@ -5,7 +5,15 @@ classdef Robin < Neumann
     end
     
     methods
-        function apply()
+        
+        function obj = Robin(beta,r)
+           
+            obj@Neumann(r);
+            obj.beta = beta;
+        
+        end
+        
+        function [K, M] = apply(assembler_object)
         
         end
     end

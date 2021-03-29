@@ -6,7 +6,11 @@ classdef Neumann
     
     methods
         
-        function apply()
+        function obj = Neumann(r)
+            obj.r = r;
+        end
+        
+        function F = apply(assembler_object)
             
         end
         

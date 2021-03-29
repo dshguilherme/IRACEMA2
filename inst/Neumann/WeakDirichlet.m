@@ -5,7 +5,15 @@ classdef WeakDirichlet < Neumann
     end
     
     methods
-        function apply()
+        
+      function obj = WeakDirichlet(penalty,r)
+           
+            obj@Neumann(r);
+            obj.penalty = penalty;
+        
+        end        
+        
+        function F = apply(assembler_object)
         
         end
     end

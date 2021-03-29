@@ -13,9 +13,10 @@ classdef Elastic < Assembler
     methods
         
         function obj = Elastic(young,poisson,quadrature,dimensions,domain)
+            
             obj@Assembler(quadrature,dimensions,domain);
             
-            n = numel(dimensions);
+            n = dimensions;
             
             lambda = poisson*young/((1+poisson)*(1-2*poisson));
             mu = young/(2*(1+poisson));

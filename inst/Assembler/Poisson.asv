@@ -1,0 +1,17 @@
+classdef Poisson < Assembler
+    
+    properties
+       
+        alpha;
+        
+    end
+    
+    methods
+        
+        function build_stiffness()
+            
+        end
+        
+    end
+    
+end
