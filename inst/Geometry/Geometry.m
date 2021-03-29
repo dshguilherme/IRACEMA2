@@ -98,6 +98,10 @@ classdef Geometry
         
         function reverse_eval(varargin)
             error('In development');
+%           Step 1. Is point(x,y,z) inside Convex Hull?
+%           Step 2. KnotRefine -> Bezier patches
+%           Step 3. Find the neareast candidate points
+%           Step 4. Find the closest point to the curve within tolerance
         end
         
         function extract_boundaries(varargin)
@@ -105,9 +109,11 @@ classdef Geometry
         end
         
         function knot_refine(varargin)
+            
         end
         
         function degree_elevate(varargin)
+            
         end
         
         function k_refine(varargin)
