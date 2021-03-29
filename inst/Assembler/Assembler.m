@@ -11,6 +11,7 @@ classdef Assembler
     methods
         
         function obj = Assembler(quadrature,dimensions,domain)
+            
             qrules = ["gauss", "cg"];
             assert(isany(quadrature == qrules),"Error: must select a valid quadrature scheme. Valid values are 'gauss' and 'cg'");
             obj.quadrature = quadrature;
@@ -21,8 +22,28 @@ classdef Assembler
             obj.domain = domain;
         end
         
-        function build_matrices()
-        
+        function [qpoints, qweights] = quad_rule(obj)
+           
+            qpoints = cell(obj.domain.rank,1);
+            qweights = qpoints;
+            
+            switch obj.quadrature
+                
+                case "gauss"
+                    for i=1:obj.domain.rank
+                        [qp, qw] = gaussian_quadrature(obj.domain.p(i));
+                        qpoints{i} = qp;
+                        qweights{i} = qw;
+                    end
+                    
+                case "cg"
+                    for i=1:obj.domain.rank
+                       [qp, qw] = cauchy_galerkin_quadrature(obj.domain.p(i));
+                        qpoints{i} = qp;
+                        qweights{i} = qw;
+                    end
+            end
+            
         end
         
         function project()
