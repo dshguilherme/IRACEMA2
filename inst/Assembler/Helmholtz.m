@@ -36,7 +36,8 @@ classdef Helmholtz < Poisson
                     [R, ~, J] = FastShape(obj.domain, q, global_basis_index, ...
                         element_local_mapping, element_ranges, e);
                     Jmod = abs(J*qw(n));
-                    M_e = M_e +Jmod*obj.density*(R*R');
+                    N = kron(R',eye(d));
+                    M_e = M_e +Jmod*obj.density*(N'*N);
                 end
                 idx = lm(:,e)';
                 M(idx,idx) = M(idx,idx) +M_e;
@@ -68,8 +69,9 @@ classdef Helmholtz < Poisson
                     [R, dR, J] = FastShape(obj.domain, q, global_basis_index, ...
                         element_local_mapping, element_ranges, e);
                     Jmod = abs(J*qw(n));
+                    N = kron(R',eye(d));
                     K_e = K_e +Jmod*obj.alpha*(dR*dR');
-                    M_e = M_e +Jmod*obj.rho*(R*R');
+                    M_e = M_e +Jmod*obj.rho*(N'*N);
                 end
                 idx = lm(:,e)';
                 K(idx,idx) = K(idx,idx) +K_e;
