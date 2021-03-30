@@ -102,12 +102,38 @@ classdef Assembler
             
         end
         
-        function project()
+        function project(obj, fun)
             
         end
         
-        function build_force()
-        
+        function F = build_force(obj, fun)
+            error('Under development.');
+            d = obj.dimensions;
+            [global_basis_index, element_local_mapping, element_ranges] = ...
+                GetConnectivityArrays(obj.domain);
+            [~, lm] = BuildGlobalLocalMatrices(element_local_mapping, d);
+            
+            [qp, qw] = obj.quad_rule;
+            n_quad = length(qw);
+            
+            ndof = max(max(element_local_mapping))*d;
+            [nel_dof, nel] = size(element_local_mapping);
+            
+            F = zeros(ndof,1);
+           for e=1:nel
+                F_e = zeros(nel_dof,d);
+                for n=1:n_quad
+                    q = qp(n,:);
+                    [R, ~, J] = FastShape(obj.domain, q, global_basis_index, ...
+                        element_local_mapping, element_ranges, e);
+                    Jmod = abs(J*qw(n));
+                    f = arrayfun(fun,q);
+                    F_e = F_e +Jmod*f*(R*R');
+                end
+                idx = lm(:,e)';
+                F(idx) = F(idx) +F_e(:);
+            end
+            F = sparse(F);
         end
         
         function apply_dirichlet()
