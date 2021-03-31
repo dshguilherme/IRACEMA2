@@ -71,7 +71,7 @@ classdef Helmholtz < Poisson
                     Jmod = abs(J*qw(n));
                     N = kron(R',eye(d));
                     K_e = K_e +Jmod*obj.alpha*(dR*dR');
-                    M_e = M_e +Jmod*obj.rho*(N'*N);
+                    M_e = M_e +Jmod*obj.density*(N'*N);
                 end
                 idx = lm(:,e)';
                 K(idx,idx) = K(idx,idx) +K_e;
