@@ -14,7 +14,12 @@ classdef CahnHilliard < Assembler
     
     methods
         
-        function mu(obj)
+        function mu = potencial(obj)
+            
+            k = 1/(2*obj.theta);
+            c = obj.c;
+            c = cell2mat(c(:));
+            mu = k*log(c./(1-c)) +1 -2*c;
             
         end
         
@@ -22,7 +27,13 @@ classdef CahnHilliard < Assembler
         
         end
         
-        function mobility(obj)
+        function M = mobility(obj)
+            
+            D = obj.diffusivity;
+            c = obj.c;
+            c = cell2mat(c(:));
+            
+            M = D*c.*(1-c);
         
         end
         

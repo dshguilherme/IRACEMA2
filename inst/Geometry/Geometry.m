@@ -96,7 +96,7 @@ classdef Geometry
             end
         end
         
-        function reverse_eval(obj)
+        function reverse_eval(obj, physical_coordinate_array)
             error('In development');
 %           Step 1. Is point(x,y,z) inside Convex Hull?
 %           Step 2. KnotRefine -> Bezier patches
