@@ -34,7 +34,7 @@ classdef Geometry
             
         end
         
-        function [x,y,z] = eval_point(parametric_coordinate_array)
+        function [x,y,z] = eval_point(obj,parametric_coordinate_array)
             
             assert(obj.rank == numel(parametric_coordinate_array),"Error: invalid number of parameters.")
                         
@@ -96,7 +96,7 @@ classdef Geometry
             end
         end
         
-        function reverse_eval(varargin)
+        function reverse_eval(obj)
             error('In development');
 %           Step 1. Is point(x,y,z) inside Convex Hull?
 %           Step 2. KnotRefine -> Bezier patches
@@ -104,24 +104,24 @@ classdef Geometry
 %           Step 4. Find the closest point to the curve within tolerance
         end
         
-        function extract_boundaries(varargin)
+        function extract_boundaries(obj)
             error('Port from IRACEMA 1.0 underway');
         end
         
-        function knot_refine(varargin)
+        function knot_refine(obj)
             
         end
         
-        function degree_elevate(varargin)
+        function degree_elevate(obj)
             
         end
         
-        function k_refine(varargin)
+        function k_refine(obj)
             degree_elevate()
             knot_refine()
         end
         
-        function build_derivative(varargin)
+        function build_derivative(obj)
             error('In development.');
         end
     end
