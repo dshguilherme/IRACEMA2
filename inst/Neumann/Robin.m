@@ -13,7 +13,7 @@ classdef Robin < Neumann
         
         end
         
-        function [K, M] = apply(assembler_object)
+        function [K, F] = apply(assembler)
         
         end
     end

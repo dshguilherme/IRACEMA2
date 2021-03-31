@@ -7,7 +7,7 @@ classdef Assembler
         domain;
         
     end
-    
+     
     methods
         
         function obj = Assembler(quadrature,dimensions,domain)
@@ -128,7 +128,7 @@ classdef Assembler
                         element_local_mapping, element_ranges, e);
                     Jmod = abs(J*qw(n));
                     f = arrayfun(fun,q);
-                    F_e = F_e +Jmod*f*(R*R');
+                    F_e = F_e +Jmod*f*(R');
                 end
                 idx = lm(:,e)';
                 F(idx) = F(idx) +F_e(:);
