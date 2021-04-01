@@ -3,17 +3,17 @@ function [dR, M, nabla_M, nabla_mu, div_nabla_R, J] = ...
             element_local_mapping, element_ranges, element);
                             
  
-qu = IntegrationPoint(1);
-qv = IntegrationPoint(2);
-qw = IntegrationPoint(3);
+qu = integration_point(1);
+qv = integration_point(2);
+qw = integration_point(3);
 
-pu = GeometryObject.pu;
-pv = GeometryObject.pv;
-pw = GeometryObject.pw;
+pu = domain.p(1);
+pv = domain.p(2);
+pw = domain.p(3);
 
-U = GeometryObject.U;
-V = GeometryObject.V;
-W = GeometryObject.W;
+U = domain.knots{1};
+V = domain.knots{2};
+W = domain.knots{3};
 
 support = global_basis_index(element_local_mapping(:,element),:);
 
@@ -115,20 +115,23 @@ d2Rdx2(:,2) = dudx(2)*(d2Rdu2*dudx(2) +d2Rdudv*dvdx(2) +d2Rdudw*dwdx(2)) + ...
 d2Rdx2(:,3) = dudx(3)*(d2Rdu2*dudx(3) +d2Rdudv*dvdx(3) +d2Rdudw*dwdx(3)) + ...
             dvdx(3)*(d2Rdudv*dudx(3) +d2Rdv2*dvdx(3) +d2Rdvdw*dwdx(3)) + ...
             dwdx(3)*(d2Rdudw*dudx(3) +d2Rdvdw*dvdx(3)+d2Rdw2*dwdx(3));
+        
+%  Won't be needing this, but just in case leave it there for future ref
+% d2Rdxdy = dudx(1)*(d2Rdu2*dudx(2) +d2Rdudv*dvdx(2) +d2Rdudw*dwdx(2)) + ...
+%            dvdx(1)*(d2Rdudv*dudx(2) +d2Rdv2*dvdx(2) +d2Rdvdw*dwdx(2)) + ...
+%            dwdx(1)*(d2Rdudw*dudx(2) +d2Rdvdw*dvdx(2) +d2Rdw2*dwdx(2));
+%        
+% d2Rdxdz = dudx(1)*(d2Rdu2*dudx(3) +d2Rdudv*dvdx(3) +d2Rdudw*dwdx(3)) + ...
+%            dvdx(1)*(d2Rdudv*dudx(3) +d2Rdv2*dvdx(3) +d2Rdvdw*dwdx(3)) + ...
+%            dwdx(1)*(d2Rdudw*dudx(3) +d2Rdvdw*dvdx(3) +d2Rdw2*dwdx(3));
+%        
+% d2Rdydz = dudx(2)*(d2Rdu2*dudx(3) +d2Rdudv*dvdx(3) +d2Rdudw*dwdx(3)) + ...
+%            dvdx(2)*(d2Rdudv*dudx(3) +d2Rdv2*dvdx(3) +d2Rdvdw*dwdx(3)) + ...
+%            dwdx(2)*(d2Rdudw*dudx(3) +d2Rdvdw*dvdx(3) +d2Rdw2*dwdx(3));
+%        
+% d2R = [d2Rdx2, d2Rdxdy, d2Rdxdz, d2Rdydz];
 
-d2Rdxdy = dudx(1)*(d2Rdu2*dudx(2) +d2Rdudv*dvdx(2) +d2Rdudw*dwdx(2)) + ...
-           dvdx(1)*(d2Rdudv*dudx(2) +d2Rdv2*dvdx(2) +d2Rdvdw*dwdx(2)) + ...
-           dwdx(1)*(d2Rdudw*dudx(2) +d2Rdvdw*dvdx(2) +d2Rdw2*dwdx(2));
-       
-d2Rdxdz = dudx(1)*(d2Rdu2*dudx(3) +d2Rdudv*dvdx(3) +d2Rdudw*dwdx(3)) + ...
-           dvdx(1)*(d2Rdudv*dudx(3) +d2Rdv2*dvdx(3) +d2Rdvdw*dwdx(3)) + ...
-           dwdx(1)*(d2Rdudw*dudx(3) +d2Rdvdw*dvdx(3) +d2Rdw2*dwdx(3));
-       
-d2Rdydz = dudx(2)*(d2Rdu2*dudx(3) +d2Rdudv*dvdx(3) +d2Rdudw*dwdx(3)) + ...
-           dvdx(2)*(d2Rdudv*dudx(3) +d2Rdv2*dvdx(3) +d2Rdvdw*dwdx(3)) + ...
-           dwdx(2)*(d2Rdudw*dudx(3) +d2Rdvdw*dvdx(3) +d2Rdw2*dwdx(3));
-       
-d2R = [d2Rdx2, d2Rdxdy, d2Rdxdz, d2Rdydz];
+div_nabla_R = sum(d2Rdx2,2);
 
 tmp = element_ranges(element,2,:) - element_ranges(element,1,:);
 tmp = [squeeze(tmp); 0];
@@ -138,6 +141,10 @@ dQdU(2,2) = tmp(2);
 dQdU(3,3) = tmp(3);
 
 Jacobian = dXdU(:,1)*dQdU(1,:) + dXdU(:,2)*dQdU(2,:) +dXdU(:,3)*dQdU(3,:);
-Jmod = det(Jacobian);
+J = det(Jacobian);
+
+M = R.*(1-R);
+nabla_M = (1-2*R).*(dR);
+nabla_mu = ((0.5/(R -R.^2) -2)').*(dR);
 
 end
