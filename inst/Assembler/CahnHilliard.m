@@ -33,7 +33,7 @@ classdef CahnHilliard < Assembler
                 K_e = zeros(nel_dof);
                 for n=1:n_quad
                     q = qp(n,:);
-                    [dR, M, nabla_M, nabla_mu, div_nabla_R, J] = ch_shape_functions(obj.domain, q, global_basis_index, ...
+                    [dR, M, nabla_M, nabla_mu, div_nabla_R, J] = ch_shape(obj.domain, q, global_basis_index, ...
                         element_local_mapping, element_ranges, e);
                     Jmod = abs(J*qw(n));
                     
