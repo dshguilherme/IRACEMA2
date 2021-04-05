@@ -1,11 +1,11 @@
 classdef Geometry
    
     properties
-        rank;
-        knots;
-        points;
-        p;
-        n;
+        rank; % int
+        knots; % [rank x 1] cell
+        points; % [nu x nv x nw] cell
+        p; % array
+        n; % array
     end
     
     methods
@@ -129,8 +129,66 @@ classdef Geometry
 %           Step 4. Find the closest point to the curve within tolerance
         end
         
-        function extract_boundaries(obj)
-            error('Port from IRACEMA 1.0 underway');
+        function boundaries = extract_boundaries(obj)
+            r = obj.rank;
+            switch r
+                case 1
+                    boundaries{1} = obj.eval_point(0);
+                    boundaries{2} = obj.eval_point(1);
+
+                case 2
+                    n = obj.n;
+                    pu = obj.p(1);
+                    U = obj.knots{1};
+
+                    pv = obj.p(2);
+                    V = obj.knots{2};
+
+                    P = obj.points;
+                    
+                    P1 = P(1,:);
+                    P1 = P1(:);
+                    P2 = P(end,:);
+                    P2 = P2(:);
+                    
+                    boundaries{1} = Geometry(r-1,{V},P1,[pv]);
+                    boundaries{2} = Geometry(r-1,{V},P2,[pv]);
+
+                    P3 = P(:,1);
+                    P3 = P3(:);
+                    P4 = P(:,end);
+                    P4 = P4(:);
+
+                    boundaries{3} = Geometry(r-1,{U},P3,[pu]);
+                    boundaries{4} = Geometry(r-1,{U},P4,[pu]);
+
+                case 3
+                    n = obj.n(1);
+                    pu = obj.p(1);
+                    U = obj.knots{1};
+
+                    pv = obj.p(2);
+                    V = obj.knots{2};
+
+                    pw = obj.p(3);
+                    W = obj.knots{3};
+                    
+                    P = obj.points;
+         
+                    P1 = reshape(P(1,:,:),[n(2),n(3)]);
+                    P2 = reshape(P(end,:,:),[n(2),n(3)]);
+                    P3 = reshape(P(:,1,:),[n(1),n(3)]);
+                    P4 = reshape(P(:,end,:),[n(1),n(3)]);
+                    P5 = reshape(P(:,:,1),[n(1),n(2)]);
+                    P6 = reshape(P(:,:,end),[n(1),n(2)];
+
+                    boundaries{1} = Geometry(r-1,{V,W},P1,[pv,pw]);
+                    boundaries{2} = Geometry(r-1,{V,W},P2,[pv,pw]);
+                    boundaries{3} = Geometry(r-1,{U,W},P3,[pu,pw]);
+                    boundaries{4} = Geometry(r-1,{U,W},P4,[pu,pw]);
+                    boundaries{5} = Geometry(r-1,{U,V},P5,[pu,pv]);
+                    boundaries{6} = Geometry(r-1,{U,V},P6,[pu,pv]);
+            end
         end
         
         function knot_refine(obj)
