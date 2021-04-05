@@ -25,7 +25,7 @@ dB = Basis(2,:);
 Q = B*Weights;
 dQ = dB*Weights;
 
-R = B'.*Weights/W;
+R = B'.*Weights/Q;
 dRdu = Weights.*(Q*dB'-dQ*B')/(Q*Q);
 % x = sum((R.*P));
 dxdu = P.*dRdu;
