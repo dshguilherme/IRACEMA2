@@ -34,64 +34,89 @@ classdef Geometry
             
         end
         
-        function [x,y,z] = eval_point(obj,parametric_coordinate_array)
+        function x = eval_point(obj,parametric_coordinate_array)
             
             assert(obj.rank == numel(parametric_coordinate_array),"Error: invalid number of parameters.")
                         
             switch obj.rank
                 
                 case 1
-                    Pw = [];
                     u = parametric_coordinate_array(1);
                     nu = obj.n(1);
                     pu = obj.p(1);
                     U = obj.knots{1};
                     
-                    point = CCurvePoint2(nu,pu,U,Pw,u);
-                    x = point.x;
-                    y = point.y;
-                    z = point.z;
-               
-                case 2
-                    Pw = [];
+                    su = FindSpanLinear(nu,pu,u,U);
+                    P = obj.get_point_cell;
+                    P = cell2mat(P(su-pu+1:su+1));
+                    weights = P(:,4);
+                    P = P(:,1:3);
+                    B = DersBasisFun(su,u,pu,0,U);
+                    Q = B*weights;
+                    R = B'.*weights/Q;
                     
-                    u = parametric_coordinate_array(1);
-                    nu = obj.n(1);
-                    pu = obj.p(1);
-                    U = obj.knots{1}; 
-                    
-                    v = parametric_coordinate_array(2);
-                    nv = obj.n(2);
-                    pv = obj.p(2);
-                    V = obj.knots{2};
-                    
-                    point = SurfacePointRAT3(nu,pu,U,nv,pv,V,Pw,u,v);
-                    x = point.x;
-                    y = point.y;
-                    z = point.z;
+                    x = sum((R.*P));
                 
-                case 3
-                    Pw = [];
+                case 2
+                             
                     u = parametric_coordinate_array(1);
                     nu = obj.n(1);
                     pu = obj.p(1);
                     U = obj.knots{1}; 
+                    su = FindSpanLinear(nu,pu,u,U);
                     
                     v = parametric_coordinate_array(2);
                     nv = obj.n(2);
                     pv = obj.p(2);
                     V = obj.knots{2};
+                    sv = FindSpanLinear(nv,pv,v,V);
                     
+                    P = obj.get_point_cell;
+                    P = P(su-pu+1:su+1,sv-pv+1:sv+1);
+                    P = cell2mat(P(:));
+                    weights = P(:,4);
+                    P = P(:,1:3);
+                    N = DersBasisFun(su,u,pu,0,U);
+                    M = DersBasisFun(sv,v,pv,0,V);
+                    B = kron(M,N);
+                    Q = B*weights;
+                    R = B'.*weights/Q;
+                    
+                    x = sum((R.*P));
+                      
+                case 3
+                    u = parametric_coordinate_array(1);
+                    nu = obj.n(1);
+                    pu = obj.p(1);
+                    U = obj.knots{1}; 
+                    su = FindSpanLinear(nu,pu,u,U);
+                    
+                    v = parametric_coordinate_array(2);
+                    nv = obj.n(2);
+                    pv = obj.p(2);
+                    V = obj.knots{2};
+                    sv = FindSpanLinear(nv,pv,v,V);
                     
                     w = parametric_coordinate_array(3);
                     nw = obj.n(3);
                     pw = obj.p(3);
-                    W = obj.knots{3};
+                    W = obj.knots{3}; 
+                    sw = FindSpanLinear(nw,pw,w,W);
+                                        
+                    P = obj.get_point_cell;
+                    P = P(su-pu+1:su+1,sv-pv+1:sv+1,sw-pw+1:sw+1);
+                    P = cell2mat(P(:));
+                    weights = P(:,4);
+                    P = P(:,1:3);
+                    N = DersBasisFun(su,u,pu,0,U);
+                    M = DersBasisFun(sv,v,pv,0,V);
+                    L = DersBasisFun(sw,w,pw,0,W);
+                    B = kron(L,kron(M,N));
                     
-                    point = VolumePoint(nu,pu,U,nv,pv,V,nw,pw,W,u,v,w);
-                    x = point.x;
-                    y = point.y;
-                    z = point.z;                  
+                    Q = B*weights;
+                    R = B'.*weights/Q;
+                    
+                    x = sum((R.*P));
            
             end
         end
