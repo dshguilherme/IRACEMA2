@@ -46,8 +46,8 @@ classdef Geometry
                     pu = obj.p(1);
                     U = obj.knots{1};
                     
-                    su = FindSpanLinear(nu,pu,u,U);
-                    P = obj.get_point_cell;
+                    su = FindSpanLinear(nu-1,pu,u,U);
+                    P = obj.points;
                     P = cell2mat(P(su-pu+1:su+1));
                     weights = P(:,4);
                     P = P(:,1:3);
@@ -63,15 +63,15 @@ classdef Geometry
                     nu = obj.n(1);
                     pu = obj.p(1);
                     U = obj.knots{1}; 
-                    su = FindSpanLinear(nu,pu,u,U);
+                    su = FindSpanLinear(nu-1,pu,u,U); %Book
                     
                     v = parametric_coordinate_array(2);
                     nv = obj.n(2);
                     pv = obj.p(2);
                     V = obj.knots{2};
-                    sv = FindSpanLinear(nv,pv,v,V);
+                    sv = FindSpanLinear(nv-1,pv,v,V);
                     
-                    P = obj.get_point_cell;
+                    P = obj.points;
                     P = P(su-pu+1:su+1,sv-pv+1:sv+1);
                     P = cell2mat(P(:));
                     weights = P(:,4);
@@ -89,21 +89,21 @@ classdef Geometry
                     nu = obj.n(1);
                     pu = obj.p(1);
                     U = obj.knots{1}; 
-                    su = FindSpanLinear(nu,pu,u,U);
+                    su = FindSpanLinear(nu-1,pu,u,U);
                     
                     v = parametric_coordinate_array(2);
                     nv = obj.n(2);
                     pv = obj.p(2);
                     V = obj.knots{2};
-                    sv = FindSpanLinear(nv,pv,v,V);
+                    sv = FindSpanLinear(nv-1,pv,v,V);
                     
                     w = parametric_coordinate_array(3);
                     nw = obj.n(3);
                     pw = obj.p(3);
                     W = obj.knots{3}; 
-                    sw = FindSpanLinear(nw,pw,w,W);
+                    sw = FindSpanLinear(nw-1,pw,w,W);
                                         
-                    P = obj.get_point_cell;
+                    P = obj.points;
                     P = P(su-pu+1:su+1,sv-pv+1:sv+1,sw-pw+1:sw+1);
                     P = cell2mat(P(:));
                     weights = P(:,4);

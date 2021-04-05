@@ -19,8 +19,8 @@ v_range = element_ranges(element,:,2);
 u = ((u_range(2)-u_range(1))*qu +(sum(u_range)))/2; % Parent -> Parametric
 v = ((v_range(2)-v_range(1))*qv +(sum(v_range)))/2;
 
-su = FindSpanLinear(length(U)-pu-1,pu,u,U);
-sv = FindSpanLinear(length(V)-pv-1,pv,v,V);
+su = FindSpanLinear(length(U)-pu-2,pu,u,U);
+sv = FindSpanLinear(length(V)-pv-2,pv,v,V);
 
 P = GeometryObject.get_point_cell;
 ind = sub2ind(size(P),support(:,1),support(:,2));
