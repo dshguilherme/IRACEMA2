@@ -10,7 +10,7 @@ support = global_basis_index(element_local_mapping(:,element),:);
 u_range = element_ranges(element,:,1);
 u = ((u_range(2)-u_range(1))*qu +(sum(u_range)))/2; % Parent -> Parametric
 
-su = FindSpanLinear(length(U)-pu-1,pu,u,U);
+su = FindSpanLinear(length(U)-pu-2,pu,u,U);
 
 P = GeometryObject.get_point_cell;
 ind = sub2ind(size(P),support(:,1));
