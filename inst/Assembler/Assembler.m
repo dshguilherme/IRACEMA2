@@ -106,9 +106,9 @@ classdef Assembler
             
         end
         
-        function F = build_force(obj, fun)
-            error('Under development.');
+        function F = constant_force(obj, f)
             d = obj.dimensions;
+            assert(length(f) == d,"ERROR: Force should have the same number of dimensions than the solution");
             [global_basis_index, element_local_mapping, element_ranges] = ...
                 GetConnectivityArrays(obj.domain);
             [~, lm] = BuildGlobalLocalMatrices(element_local_mapping, d);
@@ -119,7 +119,7 @@ classdef Assembler
             ndof = max(max(element_local_mapping))*d;
             [nel_dof, nel] = size(element_local_mapping);
             
-            F = zeros(ndof,1);
+            F = zeros(ndof*d,1);
            for e=1:nel
                 F_e = zeros(nel_dof,d);
                 for n=1:n_quad
@@ -127,8 +127,9 @@ classdef Assembler
                     [R, ~, J] = FastShape(obj.domain, q, global_basis_index, ...
                         element_local_mapping, element_ranges, e);
                     Jmod = abs(J*qw(n));
-                    f = arrayfun(fun,q);
-                    F_e = F_e +Jmod*f*(R');
+                    for dd=1:d
+                        F_e(:,d) = F_e(:,d) +Jmod*f(d)*(R');
+                    end
                 end
                 idx = lm(:,e)';
                 F(idx) = F(idx) +F_e(:);
