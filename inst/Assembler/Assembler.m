@@ -136,8 +136,8 @@ classdef Assembler
             F = sparse(F);
         end
         
-        function apply_dirichlet()
-            
+        function [K, F] = apply_dirichlet(K,F,g,boundary)
+                    
         end
         
         function solve()
