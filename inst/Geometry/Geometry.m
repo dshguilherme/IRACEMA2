@@ -131,10 +131,11 @@ classdef Geometry
         
         function boundaries = extract_boundaries(obj)
             r = obj.rank;
+            boundaries = cell(rank*2,2);
             switch r
                 case 1
-                    boundaries{1} = obj.eval_point(0);
-                    boundaries{2} = obj.eval_point(1);
+                    boundaries{1,1} = obj.eval_point(0);
+                    boundaries{2,1} = obj.eval_point(1);
 
                 case 2
                     n = obj.n;
@@ -147,23 +148,21 @@ classdef Geometry
                     P = obj.points;
                     
                     P1 = P(1,:);
-                    P1 = P1(:);
                     P2 = P(end,:);
-                    P2 = P2(:);
                     
-                    boundaries{1} = Geometry(r-1,{V},P1,[pv]);
-                    boundaries{2} = Geometry(r-1,{V},P2,[pv]);
+                    boundaries{1,1} = Geometry(r-1,{V},P1,[pv]);
+                    boundaries{2,1} = Geometry(r-1,{V},P2,[pv]);
 
                     P3 = P(:,1);
                     P3 = P3(:);
                     P4 = P(:,end);
                     P4 = P4(:);
 
-                    boundaries{3} = Geometry(r-1,{U},P3,[pu]);
-                    boundaries{4} = Geometry(r-1,{U},P4,[pu]);
+                    boundaries{3,1} = Geometry(r-1,{U},P3,[pu]);
+                    boundaries{4,1} = Geometry(r-1,{U},P4,[pu]);
 
                 case 3
-                    n = obj.n(1);
+                    n = obj.n;
                     pu = obj.p(1);
                     U = obj.knots{1};
 
@@ -182,13 +181,15 @@ classdef Geometry
                     P5 = reshape(P(:,:,1),[n(1),n(2)]);
                     P6 = reshape(P(:,:,end),[n(1),n(2)];
 
-                    boundaries{1} = Geometry(r-1,{V,W},P1,[pv,pw]);
-                    boundaries{2} = Geometry(r-1,{V,W},P2,[pv,pw]);
-                    boundaries{3} = Geometry(r-1,{U,W},P3,[pu,pw]);
-                    boundaries{4} = Geometry(r-1,{U,W},P4,[pu,pw]);
-                    boundaries{5} = Geometry(r-1,{U,V},P5,[pu,pv]);
-                    boundaries{6} = Geometry(r-1,{U,V},P6,[pu,pv]);
+                    boundaries{1,1} = Geometry(r-1,{V,W},P1,[pv,pw]);
+                    boundaries{2,1} = Geometry(r-1,{V,W},P2,[pv,pw]);
+                    boundaries{3,1} = Geometry(r-1,{U,W},P3,[pu,pw]);
+                    boundaries{4,1} = Geometry(r-1,{U,W},P4,[pu,pw]);
+                    boundaries{5,1} = Geometry(r-1,{U,V},P5,[pu,pv]);
+                    boundaries{6,1} = Geometry(r-1,{U,V},P6,[pu,pv]);
             end
+            tmp = GetBoundaries(obj);
+            boundaries(:,2) = tmp;
         end
         
         function knot_refine(obj)
@@ -204,9 +205,6 @@ classdef Geometry
             knot_refine()
         end
         
-        function build_derivative(obj)
-            error('In development.');
-        end
     end
     
 end

@@ -128,7 +128,7 @@ classdef Assembler
                         element_local_mapping, element_ranges, e);
                     Jmod = abs(J*qw(n));
                     f = arrayfun(fun,q);
-                    F_e = F_e +Jmod*f*(R');m
+                    F_e = F_e +Jmod*f*(R');
                 end
                 idx = lm(:,e)';
                 F(idx) = F(idx) +F_e(:);
@@ -136,8 +136,12 @@ classdef Assembler
             F = sparse(F);
         end
         
-        function apply_dirichlet()
-            
+        function [d, F] = dirichlet_linear_solve(K,F,g,boundaries)
+            d = zeros(size(F));
+            free_dofs = setdiff(1:length(d),boundaries);
+            d(boundaries) = g;
+            F(free_dofs) = F(free_dofs) - K(free_dofs,boundaries)*g;
+            d(free_dofs) = K(free_dofs,free_dofs)\F(free_dofs);
         end
         
         function solve()
