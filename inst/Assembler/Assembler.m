@@ -98,12 +98,37 @@ classdef Assembler
             end
             
         end
-              
-            
-        end
         
-        function project(obj, fun)
+        function F = variable_force(obj, fun)
+            d = obj.dimensions;
+            [global_basis_index, element_local_mapping, element_ranges] = ...
+                GetConnectivityArrays(obj.domain);
+            [~, lm] = BuildGlobalLocalMatrices(element_local_mapping, d);
             
+            [qp, qw] = obj.quad_rule;
+            n_quad = length(qw);
+            
+            ndof = max(max(element_local_mapping))*d;
+            [nel_dof, nel] = size(element_local_mapping);
+            
+            F = zeros(ndof*d,1);
+           for e=1:nel
+                F_e = zeros(nel_dof,d);
+                for n=1:n_quad
+                    q = qp(n,:);
+                    u = q/2 +0.5;
+                    x = obj.domain.eval_point(u);
+                    [R, ~, J] = FastShape(obj.domain, q, global_basis_index, ...
+                        element_local_mapping, element_ranges, e);
+                    Jmod = abs(J*qw(n));
+                    for dd=1:d
+                        F_e(:,d) = F_e(:,d) +Jmod*fun(x)*(R');
+                    end
+                end
+                idx = lm(:,e)';
+                F(idx) = F(idx) +F_e(:);
+            end
+            F = sparse(F);
         end
         
         function F = constant_force(obj, f)
@@ -137,18 +162,43 @@ classdef Assembler
             F = sparse(F);
         end
         
-        function [d, F] = dirichlet_linear_solve(K,F,g,boundaries)
+        function d = L2_projection(obj,F)
+           [global_basis_index, element_local_mapping, element_ranges] = ...
+                GetConnectivityArrays(obj.domain);
+            [~, lm] = BuildGlobalLocalMatrices(element_local_mapping, d);
+            
+            [qp, qw] = obj.quad_rule;
+            n_quad = length(qw);
+            
+            ndof = max(max(element_local_mapping))*d;
+            [nel_dof, nel] = size(element_local_mapping);
+            
+            M = zeros(ndof);
+            
+            for e=1:nel
+                M_e = zeros(nel_dof);
+                for n=1:n_quad
+                    q = qp(n,:);
+                    [R, ~, J] = FastShape(obj.domain, q, global_basis_index, ...
+                        element_local_mapping, element_ranges, e);
+                    Jmod = abs(J*qw(n));
+                    M_e = M_e +Jmod*(R'*R);
+                end
+                idx = lm(:,e)';
+                M(idx,idx) = M(idx,idx) +M_e;
+            end
+            M = sparse(M);
+            d = M\F;
+        end
+        
+        function [d, F, solution] = dirichlet_linear_solve(obj,K,F,g,boundaries)
             d = zeros(size(F));
             free_dofs = setdiff(1:length(d),boundaries);
             d(boundaries) = g;
             F(free_dofs) = F(free_dofs) - K(free_dofs,boundaries)*g;
             d(free_dofs) = K(free_dofs,free_dofs)\F(free_dofs);
+            solution = Solution(domain, obj.dimensions, d);
         end
-        
-        function solve()
-            
-        end
+       
         
     end
-    
-end
