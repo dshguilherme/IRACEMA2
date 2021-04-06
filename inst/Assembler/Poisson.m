@@ -48,7 +48,6 @@ classdef Poisson < Assembler
         
         function F = neumann_bc(F,obj,h,boundaries)
             domains = boundaries(:,1);
-            dofs = boundaries(:,2);
             d = obj.dimensions;
             for i=1:numel(domains)
                 asb = Assembler("gauss",d,domains{i});
@@ -79,6 +78,7 @@ classdef Poisson < Assembler
                 basis = basis(:);
                 F(basis) = F(basis)+Fi;
             end
+                F = sparse(F);
         end
             
         function [K,F] = robin_bc(K,F,obj,r,beta,boundaries)
@@ -120,7 +120,8 @@ classdef Poisson < Assembler
                 F(basis) = F(basis)+Fi;
                 K(basis,basis) = K(basis,basis) +Ki;
             end
-
+                F = sparse(F);
+                K = sparse(K);
                 
             end
            
