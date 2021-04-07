@@ -11,7 +11,7 @@ classdef Helmholtz < Poisson
             
             obj@Poisson(alpha,quadrature,dimensions,domain);
             obj.density = rho;
-            obj.speed_of_sound = sqrt(obj.young/rho);
+            obj.speed_of_sound = sqrt(obj.alpha/rho);
         end
         
         function M = build_mass(obj)
