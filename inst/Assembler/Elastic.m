@@ -97,7 +97,7 @@ classdef Elastic < Assembler
                 
                 n_quad = length(qw);
                 ndof = max(max(element_local_mapping))*d;
-                [nel_dof, nel) = size(element_local_mapping);
+                [nel_dof, nel] = size(element_local_mapping);
                 Fi = zeros(d*ndof,1);
                 
                 for e=1:nel
