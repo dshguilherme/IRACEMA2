@@ -76,7 +76,10 @@ classdef Poisson < Assembler
                 
                 basis = boundaries{i,2};
                 basis = basis(:);
-                F(basis) = F(basis)+Fi;
+                id = obj.id_matrix;
+                dofs = id(basis);
+                dofs = dofs(:);
+                F(dofs) = F(dofs)+Fi;
             end
                 F = sparse(F);
         end
@@ -116,8 +119,11 @@ classdef Poisson < Assembler
 
                 basis = boundaries{i,2};
                 basis = basis(:);
-                F(basis) = F(basis)+Fi;
-                K(basis,basis) = K(basis,basis) +Ki;
+                id = obj.id_matrix;
+                dofs = id(basis);
+                dofs = dofs(:);                
+                F(dofs) = F(dofs)+Fi;
+                K(dofs,dofs) = K(dofs,dofs) +Ki;
             end
                 F = sparse(F);
                 K = sparse(K);

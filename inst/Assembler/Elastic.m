@@ -82,8 +82,53 @@ classdef Elastic < Assembler
            end
            K = sparse(K);
         end
+
+        function F = variable_neumann_bc(obj,F,h,boundaries)
+            domains = boundaries(:,1);
+            d = obj.dimensions;
+
+            for i=1:numel(domains)
+                asb = Assembler("gauss",d,domains{i});
+                [qp, qw] = asb.quad_rule;
+                [global_basis_index, element_local_mapping, element_ranges] = ...
+                    GetConnectivityArrays(domains{i});
+                [~, lm] = BuildGlobalLocalMatrices(element_local_mapping,d);
+                
+                n_quad = length(qw);
+                ndof = max(max(element_local_mapping))*d;
+                [nel_dof, nel] = size(element_local_mapping);
+                Fi = zeros(d*ndof,1);
+                
+                for e=1:nel
+                    F_e = zeros(nel_dof,d);
+                    for n=1:n_quad
+                        q = qp(n,:);
+                        u = q/2 +0.5;
+                        x = domains{i}.eval_point(u);
+                        [R, ~, J] = FastShape(domains{i}, q, global_basis_index, ...
+                            element_local_mapping, element_ranges, e);
+                        Jmod = abs(J*qw(n));
+                        f = h(x);
+                        for dd=1:d
+                            F_e(:,dd) = F_e(:,dd) +Jmod*f(dd)*(R');
+                        end
+
+                    end
+                    idx = lm(:,e)';
+                    Fi(idx) = Fi(idx) +F_e(:);
+                end
+                
+                basis = boundaries{i,2};
+                basis = basis(:);
+                id = obj.id_matrix;
+                dofs = id(basis);
+                dofs = dofs(:);
+                F(dofs) = F(dofs)+Fi;
+            end
+                F = sparse(F);
+        end        
         
-        function F = neumann_bc(F,obj,h,boundaries)
+        function F = constant_neumann_bc(obj,F,h,boundaries)
             domains = boundaries(:,1);
             d = obj.dimensions;
             assert(length(h) == d,"ERROR: Boundary Condition must have the same size as solution's dimension");
@@ -116,9 +161,10 @@ classdef Elastic < Assembler
                     Fi(idx) = Fi(idx) +F_e(:);
                 end
                 
-                basis = boundaries{i,2};
-                basis = basis(:);
-                F(basis) = F(basis)+Fi;
+                id = obj.id_matrix;
+                dofs = id(basis);
+                dofs = dofs(:);
+                F(dofs) = F(dofs)+Fi;
             end
                 F = sparse(F);
         end
