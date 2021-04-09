@@ -13,7 +13,7 @@ U = [0 0 1 1];
 V = [0 0 1 1];
 p = [1 1];
 
-domain = Geometry(1, {U,V}, {P1,P2; P3,P4},p);
+domain = Geometry(2, {U,V}, {P1,P2; P3,P4},p);
 
 alpha = 1;
 density = 1;

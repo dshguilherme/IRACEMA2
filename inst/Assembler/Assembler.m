@@ -67,8 +67,8 @@ classdef Assembler
                     qpoints = zeros(n_quad,2);
                     qweights = zeros(n_quad,1);
                     for n =1:n_quad
-                        [i,j] = ind2sub([length(qu),length(qv)],n);
-                        qpoints(n,:) = [qu(i),qv(j)];
+                       [i,j] = ind2sub([length(qu),length(qv)],n);
+                       qpoints(n,:) = [qu(i),qv(j)];
                        qweights(n) = wu(i)*wv(j);
                     end
                     
@@ -97,6 +97,12 @@ classdef Assembler
                     end
             end
             
+        end
+        
+        function id = id_matrix(obj)
+            [global_basis_index, element_local_mapping, element_ranges] = ...
+                GetConnectivityArrays(obj.domain);
+            [id, ~] = BuildGlobalLocalMatrices(element_local_mapping, d);            
         end
         
         function F = variable_force(obj, fun)
