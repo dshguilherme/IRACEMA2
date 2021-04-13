@@ -17,12 +17,12 @@ U = [0 0 1 1];
 V = [0 0 1 1];
 p = [1 1];
 
-domain = Geometry(1, {U,V}, {P1,P2; P3,P4},p);
+domain = Geometry(2, {U,V}, {P1,P2; P3,P4},p);
 
 alpha = 52;
 
 % Refinement
-domain.k_refine;
+% domain.k_refine;
 
 % Assembly
 asb = Poisson(alpha,"gauss",1,domain);
@@ -41,7 +41,7 @@ beta = 750/alpha;
 [K,F] = asb.robin_bc(K,F,r,beta,b_robin);
 
 % Dirichlet and Solution
-b_dirichlet = boundaries{2,2};
+b_dirichlet = cell2mat(boundaries(2,2));
 g = 100;
 
 [d, ~, solution] = asb.dirichlet_linear_solve(K,F,g,b_dirichlet);

@@ -1,12 +1,12 @@
 function [global_basis_index, element_local_mapping, element_range]  = CurveConnectivity(GeometryObj)
-array_size = size(GeometryObj.PX);
+array_size = size(GeometryObj.points);
 ndof = prod(array_size);
 [n(:)] = ind2sub(array_size,1:ndof);
 global_basis_index = [n']; % global basis index == INC vector
 
-p = GeometryObj.PolynomialOrder;
+p = GeometryObj.p;
 ELEMENT_DOFS = prod(p+1);
-Knots =  GeometryObj.KnotVectorCell;
+Knots =  GeometryObj.knots;
 elements_per_direction = zeros(size(p));
 basis_spans = cell(size(Knots));
 element_ranges = basis_spans;

@@ -2,8 +2,8 @@ function [R, dR, J] = FastShape1D(GeometryObject,IntegrationPoint, ...
     global_basis_index, element_local_mapping, element_ranges, element)
 
 qu = IntegrationPoint(1);
-pu = GeometryObject.pu;
-U = GeometryObject.U;
+pu = GeometryObject.p(1);
+U = GeometryObject.knots{1};
 
 support = global_basis_index(element_local_mapping(:,element),:);
 
@@ -12,7 +12,7 @@ u = ((u_range(2)-u_range(1))*qu +(sum(u_range)))/2; % Parent -> Parametric
 
 su = FindSpanLinear(length(U)-pu-2,pu,u,U);
 
-P = GeometryObject.get_point_cell;
+P = GeometryObject.points;
 ind = sub2ind(size(P),support(:,1));
 ActivePoints = P(ind);
 ActivePoints = cell2mat(ActivePoints);

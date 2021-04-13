@@ -13,7 +13,7 @@ classdef Assembler
         function obj = Assembler(quadrature,dimensions,domain)
             
             qrules = ["gauss", "cg"];
-            assert(isany(quadrature == qrules),"Error: must select a valid quadrature scheme. Valid values are 'gauss' and 'cg'");
+            assert(any(strcmp(quadrature,qrules)),"Error: must select a valid quadrature scheme. Valid values are 'gauss' and 'cg'");
             obj.quadrature = quadrature;
 
             assert(dimensions > 0,"Error: the solutions' dimension must be greater than 0.");
@@ -91,7 +91,7 @@ classdef Assembler
                     qweights = zeros(n_quad,1);
                     
                     for n=1:n_quad
-                        [i,j,k] = ind2sub([length(qu),length(qv),length(qw),n];
+                        [i,j,k] = ind2sub([length(qu),length(qv),length(qw)],n);
                         qpoints(n,:) = [qu(i),qv(j),qw(k)];
                         qweights(n) = wu(i)*wv(j)*ww(k);
                     end
@@ -102,6 +102,7 @@ classdef Assembler
         function id = id_matrix(obj)
             [global_basis_index, element_local_mapping, element_ranges] = ...
                 GetConnectivityArrays(obj.domain);
+            d = obj.dimensions;
             [id, ~] = BuildGlobalLocalMatrices(element_local_mapping, d);            
         end
         
@@ -208,3 +209,4 @@ classdef Assembler
        
         
     end
+end
