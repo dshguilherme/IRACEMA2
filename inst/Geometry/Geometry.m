@@ -48,6 +48,7 @@ classdef Geometry
                     
                     su = FindSpanLinear(nu-1,pu,u,U);
                     P = obj.points;
+                    P = P(:);
                     P = cell2mat(P(su-pu+1:su+1));
                     weights = P(:,4);
                     P = P(:,1:3);
@@ -131,7 +132,7 @@ classdef Geometry
         
         function boundaries = extract_boundaries(obj)
             r = obj.rank;
-            boundaries = cell(rank*2,2);
+            boundaries = cell(r*2,2);
             switch r
                 case 1
                     boundaries{1,1} = obj.eval_point(0);
@@ -179,7 +180,7 @@ classdef Geometry
                     P3 = reshape(P(:,1,:),[n(1),n(3)]);
                     P4 = reshape(P(:,end,:),[n(1),n(3)]);
                     P5 = reshape(P(:,:,1),[n(1),n(2)]);
-                    P6 = reshape(P(:,:,end),[n(1),n(2)];
+                    P6 = reshape(P(:,:,end),[n(1),n(2)]);
 
                     boundaries{1,1} = Geometry(r-1,{V,W},P1,[pv,pw]);
                     boundaries{2,1} = Geometry(r-1,{V,W},P2,[pv,pw]);
