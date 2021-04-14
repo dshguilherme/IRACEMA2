@@ -32,9 +32,9 @@ F = sparse(F);
 % Boundary conditions
 boundaries = domain.extract_boundaries;
 
-b_robin1 = boundaries{3,:};
-b_robin2 = boundaries{4,:};
-b_robin = {b_robin1, b_robin2};
+b_robin1 = boundaries(3,:);
+b_robin2 = boundaries(4,:);
+b_robin = [b_robin1; b_robin2];
 r = 0;
 beta = 750/alpha;
 
