@@ -15,7 +15,7 @@ su = FindSpanLinear(length(U)-pu-2,pu,u,U);
 P = GeometryObject.points;
 ind = sub2ind(size(P),support(:,1));
 ActivePoints = P(ind);
-ActivePoints = cell2mat(ActivePoints);
+ActivePoints = cell2mat(ActivePoints(:));
 Weights = ActivePoints(:,4);
 P = ActivePoints(:,1:3);
 

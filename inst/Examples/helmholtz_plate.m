@@ -19,7 +19,7 @@ alpha = 1;
 density = 1;
 
 % Refinement
-domain.k_refine
+% domain.k_refine
 
 % Assembly
 asb = Helmholtz(density,alpha,"gauss",1,domain);
