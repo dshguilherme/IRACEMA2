@@ -3,11 +3,11 @@ function [R, dR, Jmod] = FastShape2D(GeometryObject,IntegrationPoint, ...
 qu = IntegrationPoint(1);
 qv = IntegrationPoint(2);
 
-pu = GeometryObject.pu;
-pv = GeometryObject.pv;
+pu = GeometryObject.p(1);
+pv = GeometryObject.p(2);
 
-U = GeometryObject.U;
-V = GeometryObject.V;
+U = GeometryObject.knots{1};
+V = GeometryObject.knots{2};
 
 support = global_basis_index(element_local_mapping(:,element),:);
 
@@ -20,7 +20,7 @@ v = ((v_range(2)-v_range(1))*qv +(sum(v_range)))/2;
 su = FindSpanLinear(length(U)-pu-2,pu,u,U);
 sv = FindSpanLinear(length(V)-pv-2,pv,v,V);
 
-P = GeometryObject.get_point_cell;
+P = GeometryObject.points;
 ind = sub2ind(size(P),support(:,1),support(:,2));
 ActivePoints = P(ind);
 ActivePoints = cell2mat(ActivePoints);

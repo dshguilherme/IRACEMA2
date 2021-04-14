@@ -58,7 +58,7 @@ classdef Poisson < Assembler
                 
                 n_quad = length(qw);
                 ndof = max(max(element_local_mapping))*d;
-                [nel_dof, nel) = size(element_local_mapping);
+                [nel_dof, nel] = size(element_local_mapping);
                 Fi = zeros(ndof,1);
                 
                 for e=1:nel
@@ -96,7 +96,7 @@ classdef Poisson < Assembler
 
                 n_quad = length(qw);
                 ndof = max(max(element_local_mapping))*d;
-                [nel_dof, nel) = size(element_local_mapping);
+                [nel_dof, nel] = size(element_local_mapping);
                 Fi = zeros(ndof,1);
                 Ki = zeros(ndof);
 
@@ -108,7 +108,7 @@ classdef Poisson < Assembler
                         [R, ~, J] = FastShape(domains{i}, q, global_basis_index, ...
                             element_local_mapping, element_ranges, e);
                         Jmod = abs(J*qw(n));
-                        F_e = F_e +Jmod*r*(R');
+                        F_e = F_e +Jmod*r*(R);
                         N = kron(R', eye(d));
                         K_e = K_e +Jmod*beta*(N'*N);
                     end
@@ -132,6 +132,4 @@ classdef Poisson < Assembler
            
         end
         
-    end
-    
 end
