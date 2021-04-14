@@ -26,12 +26,10 @@ asb = Helmholtz(density,alpha,"gauss",1,domain);
 [K,M] = asb.build_matrices;
 
 % Boundary Conditions
-boundaries = domain.extract_boundaries;
-[K_c, M_c] = asb.clamp_boundary(K,boundaries);
-
+[K_c, M_c] = asb.clamp_boundary(K,M);
 % Solution
-[d, omega] = eigs(K,M,'sm',100);
-omega = sqrt(diag(omega));
+% [d, omega] = eigs(K_c,M_c,'sm',100);
+% omega = sqrt(diag(omega));
 
 %Post processing
 
