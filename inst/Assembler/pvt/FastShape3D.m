@@ -4,13 +4,13 @@ qu = IntegrationPoint(1);
 qv = IntegrationPoint(2);
 qw = IntegrationPoint(3);
 
-pu = GeometryObject.pu;
-pv = GeometryObject.pv;
-pw = GeometryObject.pw;
+pu = GeometryObject.p(1)_;
+pv = GeometryObject.p(2);
+pw = GeometryObject.p(3);
 
-U = GeometryObject.U;
-V = GeometryObject.V;
-W = GeometryObject.W;
+U = GeometryObject.knots{1};
+V = GeometryObject.knots{2};
+W = GeometryObject.knots{3};
 
 support = global_basis_index(element_local_mapping(:,element),:);
 
@@ -26,7 +26,7 @@ su = FindSpanLinear(length(U)-pu-2,pu,u,U);
 sv = FindSpanLinear(length(V)-pv-2,pv,v,V);
 sw = FindSpanLinear(length(W)-pw-2,pw,w,W);
 
-P = GeometryObject.get_point_cell;
+P = GeometryObject.points;
 ind = sub2ind(size(P),support(:,1),support(:,2),support(:,3));
 ActivePoints = P(ind);
 ActivePoints = cell2mat(ActivePoints);
