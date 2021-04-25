@@ -95,7 +95,32 @@ classdef Elastodynamic < Elastic
            K = sparse(K);
            M = sparse(M);            
         end
+         function [K_c, M_c] = clamp_boundary(obj,K, M)
+            boundaries = obj.domain.extract_boundaries;
+            clamp_dofs = boundaries(:,2);
+            clamp_dofs = unique(cell2mat(clamp_dofs(:)));        
+            
+            K_c = full(K);
+            M_c = full(M);
+            
+            K_c(clamp_dofs,:) = [];
+            K_c(:,clamp_dofs) = [];
+            
+            M_c(clamp_dofs,:) = [];
+            M_c(:,clamp_dofs) = [];
+        end
         
+        function [K_c, M_c] = clamp_dofs(obj,K,M,dofs)
+            K_c = full(K);
+            M_c = full(M);
+            
+            K_c(dofs,:) = [];
+            K_c(:,dofs) = [];
+            
+            M_c(dofs,:) = [];
+            M_c(:,dofs) = [];  
+        end
+           
         function integrate_time(varargin)
             error('Not currently implemented.')
         end
