@@ -10,7 +10,10 @@ U = [0 0 0.5 1 1];
 line = Geometry(1, {U}, {P3,P2,P1}, [1]);
 
 center = [0 0 0];
-arc = geo_arc(center,1,'xy',2);
+initial_point = [0 1 0];
+theta = pi/2;
+normal = [0 0 1];
+arc = bs_arc(center, initial_point, theta, normal);
 
 domain = geo_ruled(line,arc);
 domain = geo_extrusion(domain,[0 0 0.01]);

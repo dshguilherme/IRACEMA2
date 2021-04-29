@@ -1,30 +1,22 @@
-function geometry_obj = bs_arc(point1, point2, theta, plane_point)
-assert(length(point1) == 3, "ERROR: point1 input size must be 3");
-assert(length(point2) == 3, "ERROR: point2 input size must be 3");
-assert(theta <= pi, "ERROR: theta must be between 0 and pi");
-assert(norm(plane_point -point1) > 0, "ERROR: point in plane must not be coincident with p1 or p2");
-assert(norm(plane_point -point2) > 0, "ERROR: point in plane must not be coincident with p1 or p2");
+function geometry_obj = bs_arc(center, initial_point, theta, normal)
 
-B1 = point1;
-B2 = point2;
-B3 = plane_point;
+in_vec = initial_point - center;
+R = norm(in_vec);
 
-P1 = (B2-B1)/2;
+ortho_vec = cross(normal,in_vec);
+ortho_vec = ortho_vec/norm(ortho_vec);
 
-in_vec1 = B2-P1;
-in_vec2 = B3-P1;
+P1 = initial_point;
+x = R*tan(theta/2);
+P2 = initial_point +x*ortho_vec;
 
-N = cross(in_vec2,in_vec1);
-n = N/norm(N);
+mid_vec = P2-center;
+ortho_vec = cross(normal,mid_vec);
+ortho_vec = ortho_vec/norm(ortho_vec);
+P3 = P1 +2*R*sin(theta/2)*ortho_vec;
 
-perpendicular = cross(in_vec1,n);
-perpendicular = perpendicular/norm(perpendicular);
 
-ell = norm(B2-B1);
-
-B4 = P1 + (ell/2)*tan(theta/2)*perpendicular;
-
-points = {[B1 1], [B4 cos(theta/2)], [B2 1]};
+points = {[P1 1], [P2 cos(theta/2)], [P3 1]};
 
 geometry_obj = Geometry(1,{[0 0 0 1 1 1]},points,[2]);
 
