@@ -1,12 +1,12 @@
-function geometry_obj = bs_extrusion(plane, vector)
-assert(plane.rank == 2, "ERROR: You must select a plane object to extrude")
-S = plane.points;
-U = plane.knots{1};
-V = plane.knots{2};
-pu = plane.p(1);
-pv = plane.p(2);
-nu = plane.n(1);
-nv = plane.n(2);
+function geometry_obj = bs_extrusion(surface, vector)
+assert(surface.rank == 2, "ERROR: You must select a surface object to extrude")
+S = surface.points;
+U = surface.knots{1};
+V = surface.knots{2};
+pu = surface.p(1);
+pv = surface.p(2);
+nu = surface.n(1);
+nv = surface.n(2);
 
 vec = [vector 0];
 B = S;

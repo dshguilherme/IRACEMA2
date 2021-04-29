@@ -16,10 +16,10 @@ U1 = curve1.knots{1};
 U2 = curve2.knots{1};
 
 tmp2 = ~ismember(U1,U2);
-knots_to_insert2 = U1(tmp);
+knots_to_insert2 = U1(tmp2);
 
 tmp1 = ~ismember(U2,U1);
-knots_to_insert1 = U2(tmp);
+knots_to_insert1 = U2(tmp1);
 
 if knots_to_insert2(1) ~= 0
     curve2.knot_refine(knots_to_insert2,1);
