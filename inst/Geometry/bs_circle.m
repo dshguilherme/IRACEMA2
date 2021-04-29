@@ -10,37 +10,18 @@ perp = cross(plane_vec,in_vec);
 perp = perp/norm(perp);
 
 B1 = center +radius*in_vec;
-B3 = center +radius*perp;
-
-P2 = (B3-B1)/2;
-v2 = P2-center;
-v2 = v2/norm(v2);
-B2 = center +radius*v2;
-
-B5 = center -radius*in_vec;
-
-P4 = (B5-B3)/2;
-v4 = P4-center;
-v4 = v4/norm(v4);
-B4 = center +radius*v4;
-
-B7 = center -radius*perp;
-
-P6 = (B7-B5)/2;
-v6 = P6-center;
-v6 = v6/norm(v6);
-B6 = center +radius*v6;
-
-P8 = (B1-B7)/2;
-v8 = P8-center;
-v8 = v8/norm(v8);
-B8 = center +radius*v8;
-
+B2 = B1 +radius*perp;
+B3 = B2 -radius*in_vec;
+B4 = B3 -radius*in_vec;
+B5 = B4 -radius*perp;
+B6 = B5 -radius*perp;
+B7 = B6 +radius*in_vec;
+B8 = B7 +radius*in_vec;
 B9 = B1;
 
 U = [0 0 0 1 1 2 2 3 3 4 4 4]/4;
 
-w = repmat([1 sqrt(2)/2 1],[1,3]);
+w = [1 sqrt(2)/2 1 sqrt(2)/2 1 sqrt(2)/2 1 sqrt(2)/2 1];
 w = w';
 P = [B1;B2;B3;B4;B5;B6;B7;B8;B9];
 P = [P,w];
