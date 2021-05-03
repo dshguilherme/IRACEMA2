@@ -1,9 +1,10 @@
-classdef Geometry
+classdef Geometry < handle
    
     properties
         rank; % int
         knots; % [rank x 1] cell
         points; % [nu x nv x nw] cell
+        weighted_points; % [nu x nv x nw] cell
         p; % array
         n; % array
     end
@@ -31,6 +32,16 @@ classdef Geometry
             assert(numel(points(:)) == mult, "Error: invalid number of points. A B-Spline has (n-p) points per parametric direction")
             
             obj.points = points;
+            Pw = cell2mat(points(:));
+            weights = Pw(:,4);
+            Pw = Pw(:,1:3).*weights;
+            
+            cp(1:prod(n)) = CPOINT(0,0,0,0,1);
+            for i=1:prod(n)
+                cp(i) = CPOINT(Pw(i,1),Pw(i,2),Pw(i,3),weights(i));
+            end
+            cp = reshape(cp,size(points));          
+            obj.weighted_points = cp;
             
         end
         
@@ -193,17 +204,119 @@ classdef Geometry
             boundaries(:,2) = tmp;
         end
         
-        function knot_refine(obj)
+        function obj = knot_refine(obj,knots_to_add,dir)
+            Xi = knots_to_add;
+            switch obj.rank
+                case 1
+                    nu = obj.n(1);
+                    pu = obj.p(1);
+                    U = obj.knots{1};
+                    [obj.knots{dir}, obj.Pw] = ...
+                        RefineKnotVectCurve(nu,pu,U,Pw,Xi,dir);
+                    
+                    obj.n(1) = size(Pw,1);
+
+                case 2
+                    nu = obj.n(1);
+                    nv = obj.n(2);
+                    
+                    pu = obj.p(1);
+                    pv = obj.p(2);
+                    
+                    U = obj.knots{1};
+                    V = obj.knots{2};
+                    
+                    [obj.knots{dir}, obj.Pw] = ...
+                        RefineKnotVectSurface(nu,pu,U,nv,pv,V,Pw,Xi,dir);                    
+                
+                case 3
+                    nu = obj.n(1);
+                    nv = obj.n(2);
+                    nw = obj.n(3);
+                    
+                    pu = obj.p(1);
+                    pv = obj.p(2);
+                    pw = obj.p(3);
+                    
+                    U = obj.knots{1};
+                    V = obj.knots{2};
+                    W = obj.knots{3};
+                    
+                    [obj.knots{dir}, obj.Pw] = ...
+                        RefineKnotSolid(nu,pu,U,nv,pv,V,nw,pw,W,Pw,Xi,dir);
+            end
             
+                    obj.n(dir) = size(Pw,dir);
+                    obj.weighted_points = Pw;
+                    points = obj.points;
+                    points = cell2mat(points(:));
+                    for i=1:prod(obj.p)
+                        points(1,:) = [Pw(i).x, Pw(i).y, Pw(i).z, Pw(i).w];
+                    end
+                    points = num2cell(points,2);
+                    obj.points = points;
         end
         
-        function degree_elevate(obj)
-            
+        function obj = degree_elevate(obj, t, dir)
+            Pw = obj.weighted_points;
+            switch obj.rank
+                case 1
+                    nu = obj.n(1);
+                    pu = obj.p(1);
+                    U = obj.knots{1};
+                    
+                    [nu, U, Pw] = DegreeElevateCurve(nu,pu,U,Pw,t);
+                    obj.p(1) = obj.p(1)+t;
+                    obj.n(1) = nu;
+                    obj.knots{1} = U;
+
+                case 2
+                    nu = obj.n(1);
+                    nv = obj.n(2);
+                    
+                    pu = obj.p(1);
+                    pv = obj.p(2);
+                    
+                    U = obj.knots{1};
+                    V = obj.knots{2};
+                    
+                    [obj.n(dir), obj.knots{dir}, obj.Pw] = ...
+                        DegreeElevateSurface(nu,pu,U,nv,pv,V,Pw,dir,t);
+                   
+                case 3
+                    nu = obj.n(1);
+                    nv = obj.n(2);
+                    nw = obj.n(3);
+                    
+                    pu = obj.p(1);
+                    pv = obj.p(2);
+                    pw = obj.p(3);
+                    
+                    U = obj.knots{1};
+                    V = obj.knots{2};
+                    W = obj.knots{3};
+                    
+                    [obj.n(dir), obj.knots{dir}, obj.Pw] = ...
+                        DegreeElevateSolid(nu,pu,U,nv,pv,V,nw,pw,W,Pw,dir,t);
+            end
+                
+            points = obj.points;
+            points = cell2mat(points(:));
+            for i=1:prod(obj.n)
+                points(1,:) = [Pw(i).x, Pw(i).y, Pw(i).z, Pw(i).w];
+            end
+            points = num2cell(points,2);
+            obj.points = points;
         end
         
-        function k_refine(obj)
-            degree_elevate()
-            knot_refine()
+        function obj = uniform_k_refine(obj,Xi,p)
+            Xi = Xi(2:end-1);
+            obj.degree_elevate(p,1);
+            obj.degree_elevate(p,2);
+            obj.degree_elevate(p,3);
+            obj.knot_refine(Xi,1);
+            obj.knot_refine(Xi,2);
+            obj.knot_refine(Xi,3);
         end
         
         function h = plot_geo(obj)

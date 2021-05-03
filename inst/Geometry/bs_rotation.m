@@ -8,7 +8,7 @@ s = size(P);
 B = cell(s);
 P = cell2mat(P(:));
 for i=1:prod(s)
-    B{i} = [rot*P(i,1:3) P(i,4)];
+    B{i} = [RM*P(i,1:3)'; P(i,4)]';
 end
 
 geometry_obj = Geometry(geometry.rank, geometry.knots, B, geometry.p);
