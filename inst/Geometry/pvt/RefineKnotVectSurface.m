@@ -1,5 +1,5 @@
 function [Ubar, Vbar, Qw] = RefineKnotVectSurface(n,p,U,m,q,V,Pw,X,r,dir)
-
+r = numel(X)-1;
 if dir == 1
     
     Qw = Pw;

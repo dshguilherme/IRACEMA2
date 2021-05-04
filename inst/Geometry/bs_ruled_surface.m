@@ -21,10 +21,10 @@ knots_to_insert2 = U1(tmp2);
 tmp1 = ~ismember(U2,U1);
 knots_to_insert1 = U2(tmp1);
 
-if knots_to_insert2(1) ~= 0
+if ~isempty(knots_to_insert2)
     curve2.knot_refine(knots_to_insert2,1);
 end
-if knots_to_insert1(1) ~= 0
+if ~isempty(knots_to_insert1)
     curve1.knot_refine(knots_to_insert1,1);
 end
 
@@ -34,8 +34,8 @@ B2 = curve2.points;
 U = U1;
 V = [0 0 1 1];
 
-S = cell(curve1.n(1) +1,2);
-for i = 1:curve1.n(1) +1
+S = cell(curve1.n(1),2);
+for i = 1:curve1.n(1)
     S{i,1} = B1{i};
     S{i,2} = B2{i};
 end

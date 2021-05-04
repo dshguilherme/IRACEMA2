@@ -15,7 +15,7 @@ theta = pi/2;
 normal = [0 0 1];
 arc = bs_arc(center, initial_point, theta, normal);
 
-domain = geo_ruled(line,arc);
+domain = bs_ruled_surface(line,arc);
 domain = geo_extrusion(domain,[0 0 0.01]);
 
 E = 10e5;

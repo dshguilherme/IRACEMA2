@@ -1,11 +1,11 @@
-function [Ubar, Qw] = RefineKnotVectCurve(n,p,U,Pw,X,r)
-
+function [Ubar, Qw] = RefineKnotVectCurve(n,p,U,Pw,X)
+r = numel(X)-1;
 m = n+p+1;
 a = FindSpanLinear(n,p,X(1),U);
 b = FindSpanLinear(n,p,X(r+1),U);
 b = b+1;
 
-Qw(1:numel(Pw)+numel(X)-1) = CPOINT(0,0,0,1,1);
+Qw(1:numel(Pw)+r) = CPOINT(0,0,0,1,1);
 for j=0:a-p
     Qw(j+1) = Pw(j+1);
 end
