@@ -49,7 +49,7 @@ classdef Elastic < Assembler
             
            K = zeros(ndof);
            for e=1:nel
-                K_e = zeros(nel_dof);
+                K_e = zeros(nel_dof*d);
                 for n=1:n_quad
                     q = qp(n,:);
                     [~, dR, J] = FastShape(obj.domain, q, global_basis_index, ...
@@ -74,8 +74,8 @@ classdef Elastic < Assembler
                     else
                         error('Could not build stress-strain matrix: obj.dimension should be 2 or 3');
                     end
-                    C = obj.tensor;
-                    K_e = K_e +Jmod*B'*C*B;
+                    C = obj.stress_tensor;
+                    K_e = K_e +Jmod*(B'*C)*B;
                 end
                 idx = lm(:,e)';
                 K(idx,idx) = K(idx,idx) +K_e;
@@ -110,7 +110,7 @@ classdef Elastic < Assembler
                         Jmod = abs(J*qw(n));
                         f = h(x);
                         for dd=1:d
-                            F_e(:,dd) = F_e(:,dd) +Jmod*f(dd)*(R');
+                            F_e(:,dd) = F_e(:,dd) +Jmod*f(dd)*(R);
                         end
 
                     end

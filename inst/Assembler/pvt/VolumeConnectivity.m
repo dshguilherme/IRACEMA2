@@ -1,6 +1,6 @@
 function [global_basis_index, element_local_mapping, element_range] = ...
     VolumeConnectivity(GeometryObj)
-array_size = size(GeometryObj.p);
+array_size = size(GeometryObj.points);
 ndof = prod(array_size);
 [n(:), m(:), l(:)] = ind2sub(array_size,1:ndof);
 global_basis_index = [n',m',l']; % global basis index == INC vector

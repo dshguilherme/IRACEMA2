@@ -16,14 +16,15 @@ normal = [0 0 1];
 arc = bs_arc(center, initial_point, theta, normal);
 
 domain = bs_ruled_surface(line,arc);
-domain = geo_extrusion(domain,[0 0 0.01]);
+domain = bs_extrusion(domain,[0 0 0.01]);
+domain.knot_refine([0.1 0.2 0.3],1);
 
 E = 10e5;
 vu = 0.3;
 
 % Assembly
 
-asb = Elastic(E,vu,"gauss",2,domain);
+asb = Elastic(E,vu,"gauss",3,domain);
 K = asb.build_stiffness;
 
 % Boundary Conditions
@@ -38,14 +39,15 @@ tau_xx = @(r,theta) 1 - (1/r^2)*(1.5*cos(2*theta) +cos(4*theta)) + ...
                     (1.5/(r^4))*cos(4*theta);
 tau_yy = @(r,theta) -(1/r^2)*(0.5*cos(2*theta) -cos(4*theta)) + ...
                     (1.5/(r^4))*cos(4*theta);
-tau_xy = @(r,theta) -(1/r^2)*(0.5*sin(2*theta) +sin(4*theta) + ...
+tau_xy = @(r,theta) -(1/r^2)*(0.5*sin(2*theta) +sin(4*theta)) + ...
                     (1.5/(r^4))*sin(4*theta);
                 
 h = @(x) [tau_xx(r(x(1),x(2)),theta(x(1),x(2)));
           tau_yy(r(x(1),x(2)),theta(x(1),x(2)));
           0*tau_xy(r(x(1),x(2)),theta(x(1),x(2)))];
 
-F = zeros(size(K),1);
+F = zeros(size(K));
+F = F(:);
 F = asb.variable_neumann_bc(F,h,boundaries);
       
 % Dirichlet Boundary Conditions:

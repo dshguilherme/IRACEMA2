@@ -10,8 +10,8 @@ nv = surface.n(2);
 
 vec = [vector 0];
 B = S;
-for i=1:nu+1
-    for j=1:nv+1
+for i=1:nu
+    for j=1:nv
         B{i,j,2} = B{i,j,1} +vec;
     end
 end
