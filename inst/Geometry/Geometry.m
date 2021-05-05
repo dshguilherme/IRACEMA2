@@ -216,7 +216,7 @@ classdef Geometry < handle
             Pw = obj.weighted_points;
             switch obj.rank
                 case 1
-                    nu = obj.n(1)-1;
+                    nu = obj.n(1);
                     pu = obj.p(1);
                     U = obj.knots{1};
                     Qw = obj.Pw;
@@ -272,8 +272,9 @@ classdef Geometry < handle
                         Q = reshape(Q,size(Qw));
                         obj.points = Q;
                         obj.knots{dir} = U;
+                    end
+                end
             end
-        end
         
         function obj = degree_elevate(obj, t, dir)
             Pw = obj.weighted_points;

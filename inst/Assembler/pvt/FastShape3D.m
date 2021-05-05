@@ -4,7 +4,7 @@ qu = IntegrationPoint(1);
 qv = IntegrationPoint(2);
 qw = IntegrationPoint(3);
 
-pu = GeometryObject.p(1)_;
+pu = GeometryObject.p(1);
 pv = GeometryObject.p(2);
 pw = GeometryObject.p(3);
 
@@ -45,6 +45,7 @@ dBdw = kron(L(2,:),kron(M(1,:),N(1,:)));
 Q = B*Weights;
 dQdu = dBdu*Weights;
 dQdv = dBdv*Weights;
+dQdw = dBdw*Weights;
 
 R = B'.*Weights/Q;
 

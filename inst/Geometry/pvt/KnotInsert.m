@@ -1,5 +1,6 @@
 function [U, Qw] = KnotInsert(nu,pu,U,P,xi)
 assert(length(xi) == 1,"ERROR: Must insert only one knot")
+nu = nu-1;
 k = FindSpanLinear(nu,pu,xi,U);
 k = k+1;
 Pw = P(:);
