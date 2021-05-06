@@ -4,7 +4,6 @@ classdef Geometry < handle
         rank; % int
         knots; % [rank x 1] cell
         points; % [nu x nv x nw] cell
-        weighted_points; % [nu x nv x nw] cell
         Pw; % [prod(n) x 4] matrix
         p; % array
         n; % array
@@ -213,12 +212,14 @@ classdef Geometry < handle
         
         function obj = knot_refine(obj,knots_to_add,dir)
             Xi = knots_to_add;
-            Pw = obj.weighted_points;
             switch obj.rank
                 case 1
                     nu = obj.n(1);
                     pu = obj.p(1);
                     U = obj.knots{1};
+                    P = obj.points;
+                    Qw = cell2mat(P(:));
+                    Qw(:,1:3) = Qw(:,1:3).*Qw(:,4);
                     Qw = obj.Pw;
                     for i=1:length(knots_to_add)
                         xi = knots_to_add(i);
@@ -269,7 +270,7 @@ classdef Geometry < handle
                         Q = cell2mat(Q);
                         Q(:,1:3) = Q(:,1:3)./Q(:,4);
                         Q = num2cell(Q,2);
-                        Q = reshape(Q,size(Qw));
+                        Q = reshape(Q,n);
                         obj.points = Q;
                         obj.knots{dir} = U;
                     end
@@ -277,60 +278,31 @@ classdef Geometry < handle
             end
         
         function obj = degree_elevate(obj, t, dir)
-            Pw = obj.weighted_points;
             switch obj.rank
                 case 1
-                    nu = obj.n(1)-1;
-                    pu = obj.p(1);
-                    U = obj.knots{1};
-                    
-                    [~, U, obj.weighted_points] = DegreeElevateCurve(nu,pu,U,Pw,t);
-                    obj.p(1) = obj.p(1)+t;
-                    obj.knots{1} = U;
+                    for i=1:t
+                        [obj.n(dir), obj.knots{dir}, obj.points] = ... 
+                            DegreeElevate(obj.n(dir),obj.p(dir), ...
+                                           obj.knots{dir}, obj.points);
+                        obj.p(dir) = obj.p(dir)+1;
+                    end
 
                 case 2
-                    nu = obj.n(1)-1;
-                    nv = obj.n(2)-1;
-                    
-                    pu = obj.p(1);
-                    pv = obj.p(2);
-                    
-                    U = obj.knots{1};
-                    V = obj.knots{2};
-                    
-                    [~, obj.knots{dir}, obj.weighted_points] = ...
-                        DegreeElevateSurface(nu,pu,U,nv,pv,V,Pw,dir,t);
+                    for i=1:t
+                        [obj.n(dir), obj.knots{dir}, obj.points] = ...
+                            SurfaceDegreeElevate(obj.n(dir),obj.p(dir), ...
+                                                 obj.knots{dir}, obj.points, dir);
+                         obj.p(dir) = obj.p(dir)+1;
+                    end
                    
                 case 3
-                    nu = obj.n(1)-1;
-                    nv = obj.n(2)-1;
-                    nw = obj.n(3)-1;
-                    
-                    pu = obj.p(1);
-                    pv = obj.p(2);
-                    pw = obj.p(3);
-                    
-                    U = obj.knots{1};
-                    V = obj.knots{2};
-                    W = obj.knots{3};
-                    
-                    [~, obj.knots{dir}, obj.weighted_points] = ...
-                        DegreeElevateSolid(nu,pu,U,nv,pv,V,nw,pw,W,Pw,dir,t);
+                    for i=1:t
+                        [obj.n(dir), obj.knots{dir}, obj.points] = ...
+                            VolumeDegreeElevate(obj.n(dir),obj.p(dir), ...
+                                                 obj.knots{dir}, obj.points, dir);
+                         obj.p(dir) = obj.p(dir)+1;
+                    end
             end
-                    Pw = obj.weighted_points;
-                    if obj.rank == 1
-                        obj.n = numel(Pw);
-                    else
-                        obj.n(dir) = size(Pw,dir);
-                    end
-                    
-                    points = zeros(numel(Pw),4);
-                    for i=1:prod(obj.n)
-                        w = Pw(i).w;
-                        points(i,:) = [Pw(i).x/w, Pw(i).y/w, Pw(i).z/w, w];
-                    end
-                    points = num2cell(points,2);
-                    obj.points = points;
         end
         
         function obj = uniform_k_refine(obj,Xi,p)
