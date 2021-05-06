@@ -17,7 +17,6 @@ arc = bs_arc(center, initial_point, theta, normal);
 
 domain = bs_ruled_surface(line,arc);
 domain = bs_extrusion(domain,[0 0 0.01]);
-domain.knot_refine([0.1 0.2 0.3],1);
 
 E = 10e5;
 vu = 0.3;
