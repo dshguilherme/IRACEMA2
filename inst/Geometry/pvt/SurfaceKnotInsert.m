@@ -1,4 +1,4 @@
-function [U, Qw] = SurfaceKnotInsert(n,p,U,P,xi,dir)
+function [nn, nU, nP] = SurfaceKnotInsert(n,p,U,P,xi,dir)
 assert(length(xi) == 1, "ERROR: Must insert only one knot");
 nu = n-1;
 pu = p;
@@ -45,5 +45,12 @@ for i = k-pu+1:k
     idx3{dir} = i;
     Qw(idx3{1},idx3{2}) = Qw3;
 end
-U = [U(1:k) xi U(k+1:end)];
+nU = [U(1:k) xi U(k+1:end)];
+nP = cell2mat(Qw(:));
+nP(:,1:3) = nP(:,1:3)./nP(:,4);
+nP = num2cell(nP,2);
+nP = reshape(nP,size(Qw));
+nn = length(nU)-pu-1;
+
+
 end

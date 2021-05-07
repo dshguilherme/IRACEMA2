@@ -4,7 +4,6 @@ classdef Geometry < handle
         rank; % int
         knots; % [rank x 1] cell
         points; % [nu x nv x nw] cell
-        Pw; % [prod(n) x 4] matrix
         p; % array
         n; % array
     end
@@ -35,20 +34,7 @@ classdef Geometry < handle
             mult = prod(n);
             assert(numel(points(:)) == mult, "Error: invalid number of points. A B-Spline has (n-p) points per parametric direction")
             
-            obj.points = points;
-            Pw = cell2mat(points(:));
-            weights = Pw(:,4);
-            Pw = Pw(:,1:3).*weights;
-            
-            cp(1:prod(n)) = CPOINT(0,0,0,0,1);
-            for i=1:prod(n)
-                cp(i) = CPOINT(Pw(i,1),Pw(i,2),Pw(i,3),weights(i),0);
-            end
-            cp = reshape(cp,size(points));          
-            obj.weighted_points = cp;
-            
-            obj.Pw = [Pw, weights];
-            
+            obj.points = points;            
         end
         
         function x = eval_point(obj,parametric_coordinate_array)
@@ -211,71 +197,33 @@ classdef Geometry < handle
         end
         
         function obj = knot_refine(obj,knots_to_add,dir)
-            Xi = knots_to_add;
             switch obj.rank
                 case 1
-                    nu = obj.n(1);
-                    pu = obj.p(1);
-                    U = obj.knots{1};
-                    P = obj.points;
-                    Qw = cell2mat(P(:));
-                    Qw(:,1:3) = Qw(:,1:3).*Qw(:,4);
-                    Qw = obj.Pw;
                     for i=1:length(knots_to_add)
                         xi = knots_to_add(i);
-                        [U, Qw] = KnotInsert(nu,pu,U,obj.points,xi);
-                        nu = nu+1;
-                        obj.n(1) = nu;
-                        obj.knots{dir} = U;
-                        Q = Qw(:);
-                        Q = cell2mat(Q);
-                        Q(:,1:3) = Q(:,1:3)./Q(:,4);
-                        Q = num2cell(Q,2);
-                        Q = reshape(Q,size(Qw));
-                        obj.points = Q;
+                        [obj.n(dir), obj.knots{dir}, obj.points] = ...
+                            KnotInsert(obj.n(dir),obj.p(dir), ...
+                                       obj.knots{dir},obj.points,xi);
                     end
                     
                 case 2
-                    n = obj.n(dir);
-                    p = obj.p(dir);
-                    P = obj.points;
-                    U = obj.knots{dir};
                     for i=1:length(knots_to_add)
                         xi = knots_to_add(i);
-                        [U, Qw] = ... 
-                            SurfaceKnotInsert(n,p,U,obj.points,xi,dir);
-                        n = n+1;
-                        obj.n(dir) = n;
-                        Q = Qw(:);
-                        Q = cell2mat(Q);
-                        Q(:,1:3) = Q(:,1:3)./Q(:,4);
-                        Q = num2cell(Q,2);
-                        Q = reshape(Q,size(Qw));
-                        obj.points = Q;
-                        obj.knots{dir} = U;
+                        [obj.n(dir), obj.knots{dir}, obj.points] = ...
+                            SurfaceKnotInsert(obj.n(dir),obj.p(dir), ...
+                                       obj.knots{dir},obj.points,xi,dir);
                     end
                  
                 case 3
-                    n = obj.n(dir);
-                    p = obj.p(dir);
-                    P = obj.points;
-                    U = obj.knots{dir};
                     for i=1:length(knots_to_add)
                         xi = knots_to_add(i);
-                        [U, Qw] = ... 
-                            VolumeKnotInsert(n,p,U,obj.points,xi,dir);
-                        n = n+1;
-                        obj.n(dir) = n;
-                        Q = Qw(:);
-                        Q = cell2mat(Q);
-                        Q(:,1:3) = Q(:,1:3)./Q(:,4);
-                        Q = num2cell(Q,2);
-                        Q = reshape(Q,n);
-                        obj.points = Q;
-                        obj.knots{dir} = U;
+                        [obj.n(dir), obj.knots{dir}, obj.points] = ...
+                            VolumeKnotInsert(obj.n(dir),obj.p(dir), ...
+                                       obj.knots{dir},obj.points,xi,dir);
+ 
                     end
-                end
             end
+        end
         
         function obj = degree_elevate(obj, t, dir)
             switch obj.rank

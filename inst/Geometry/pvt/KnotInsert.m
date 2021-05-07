@@ -1,4 +1,4 @@
-function [U, Qw] = KnotInsert(nu,pu,U,P,xi)
+function [nn nU, nP] = KnotInsert(nu,pu,U,P,xi)
 assert(length(xi) == 1,"ERROR: Must insert only one knot")
 nu = nu-1;
 k = FindSpanLinear(nu,pu,xi,U);
@@ -14,7 +14,9 @@ for i = k-pu+1:k
     alpha = (xi-U(i))/(U(i+pu)-U(i));
     Qw(i,:) = alpha*Pw(i,:) +(1-alpha)*Pw(i-1,:);
 end
-U = [U(1:k) xi U(k+1:end)];
-Qw = num2cell(Qw,2);
-Qw = reshape(Qw,[1,length(P)+1]);
+nU = [U(1:k) xi U(k+1:end)];
+Qw(:,1:3) = Qw(:,1:3)./Qw(:,4);
+nP = num2cell(Qw,2);
+nP = reshape(nP,[1,length(P)+1]);
+nn = length(nU)-pu-1;
 end
