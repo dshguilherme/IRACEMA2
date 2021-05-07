@@ -254,7 +254,6 @@ classdef Geometry < handle
         end
         
         function obj = uniform_k_refine(obj,Xi,p)
-            Xi = Xi(2:end-1);
             obj.degree_elevate(p,1);
             obj.degree_elevate(p,2);
             obj.degree_elevate(p,3);
