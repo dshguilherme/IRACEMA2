@@ -204,7 +204,7 @@ classdef Assembler
             d(boundaries) = g;
             F(free_dofs) = F(free_dofs) - K(free_dofs,boundaries)*d(boundaries);
             d(free_dofs) = K(free_dofs,free_dofs)\F(free_dofs);
-            solution = Solution(domain, obj.dimensions, d);
+            solution = Solution(obj.domain, obj.dimensions, d);
         end
        
         
