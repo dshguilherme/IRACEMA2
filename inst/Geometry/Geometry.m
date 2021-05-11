@@ -298,81 +298,18 @@ classdef Geometry < handle
                     h = surf(x,y,z);
                     set(h,'edgecolor','none','facecolor',[0 0 1],'FaceLighting','phong');
                 case 3
-                    u = linspace(0,1,100);
-                    v = u;
-                    w = u;
-                    h = cell(6,1);
-                    x = zeros(length(u),length(v));
-                    y = x;
-                    z = x;
-                    %%% u,v, w = 0
-                    for i=1:length(u)
-                        for j=1:length(v)
-                            point = obj.eval_point([u(i) v(j) 0]);
-                            x(i,j) = point(1);
-                            y(i,j) = point(2);
-                            z(i,j) = point(3);
-                        end
-                    end
-                    h{1} = surf(x,y,z);
-                    hold all;
-                    set(h{1},'edgecolor','none','facecolor',[0 0 1],'FaceLighting','phong');
-                    %%% u,v, w = 1
-                    for i=1:length(u)
-                        for j=1:length(v)
-                            point = obj.eval_point([u(i) v(j) 1]);
-                            x(i,j) = point(1);
-                            y(i,j) = point(2);
-                            z(i,j) = point(3);
-                        end
-                    end
-                    h{2} = surf(x,y,z);
-                    set(h{2},'edgecolor','none','facecolor',[0 0 1],'FaceLighting','phong');
-                    %%% u,w, v = 0
-                    for i=1:length(u)
-                        for j=1:length(w)
-                            point = obj.eval_point([u(i) 0 w(j)]);
-                            x(i,j) = point(1);
-                            y(i,j) = point(2);
-                            z(i,j) = point(3);
-                        end
-                    end
-                    h{3} = surf(x,y,z);
-                    set(h{3},'edgecolor','none','facecolor',[0 0 1],'FaceLighting','phong');
-                    %%% u,w, v = 1
-                    for i=1:length(u)
-                        for j=1:length(w)
-                            point = obj.eval_point([u(i) 1 w(j)]);
-                            x(i,j) = point(1);
-                            y(i,j) = point(2);
-                            z(i,j) = point(3);
-                        end
-                    end
-                    h{4} = surf(x,y,z);
-                    set(h{4},'edgecolor','none','facecolor',[0 0 1],'FaceLighting','phong');
-                    %%% w,v, u = 0
-                    for i=1:length(w)
-                        for j=1:length(v)
-                            point = obj.eval_point([0 v(j) w(i)]);
-                            x(i,j) = point(1);
-                            y(i,j) = point(2);
-                            z(i,j) = point(3);
-                        end
-                    end
-                    %%% w,v, u = 1
-                    h{5} = surf(x,y,z);
-                    set(h{5},'edgecolor','none','facecolor',[0 0 1],'FaceLighting','phong');
-                    for i=1:length(w)
-                        for j=1:length(v)
-                            point = obj.eval_point([1 v(j) w(i)]);
-                            x(i,j) = point(1);
-                            y(i,j) = point(2);
-                            z(i,j) = point(3);
-                        end
-                    end
-                    h{6} = surf(x,y,z);
-                    set(h{6},'edgecolor','none','facecolor',[0 0 1],'FaceLighting','phong');
-                    light;
+                   u = linspace(0,1,100);
+                   v = u;
+                   x = zeros(length(u),length(v));
+                   y = x;
+                   z = x;
+                   b = obj.extract_boundaries;
+                   b = b(:,1);
+                   h = cell(6,1);
+                   hold on
+                   for k=1:6
+                       h{k} = b{k}.plot_geo;
+                   end
             end
         end
         

@@ -147,6 +147,22 @@ classdef Solution < Geometry
                     h = surf(x,y,z,c);
                     colorbar;
                     set(h,'edgecolor','none','FaceLighting','phong');
+                
+               case 3
+                   error('NOT YET IMPLEMENTED');
+                   u = linspace(0,1,100);
+                   v = u;
+                   x = zeros(length(u),length(v));
+                   y = x;
+                   z = x;
+                   c = x;
+                   b = obj.domain.extract_boundaries;
+                   b = b(:,1);
+                   hold on
+                   for k=1:6
+                       h{k} = b{k}.plot_solution(dim);
+                   end
+
            end
         end
         
