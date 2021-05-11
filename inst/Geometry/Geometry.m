@@ -255,11 +255,16 @@ classdef Geometry < handle
         
         function obj = uniform_k_refine(obj,Xi,p)
             obj.degree_elevate(p,1);
-            obj.degree_elevate(p,2);
-            obj.degree_elevate(p,3);
             obj.knot_refine(Xi,1);
-            obj.knot_refine(Xi,2);
-            obj.knot_refine(Xi,3);
+            if obj.rank > 1
+                obj.degree_elevate(p,2);
+                obj.knot_refine(Xi,2);
+            end
+            if obj.rank > 2 
+               obj.degree_elevate(p,3);
+               obj.knot_refine(Xi,3);
+            end
+            
         end
         
         function h = plot_geo(obj)

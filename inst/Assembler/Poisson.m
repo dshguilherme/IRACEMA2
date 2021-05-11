@@ -129,7 +129,6 @@ classdef Poisson < Assembler
                 K = sparse(K);
                 
             end
-           
         end
         
 end

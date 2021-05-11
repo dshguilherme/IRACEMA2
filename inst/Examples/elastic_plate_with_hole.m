@@ -19,9 +19,9 @@ domain = bs_ruled_surface(line,arc);
 domain = bs_extrusion(domain,[0 0 0.01]);
 
 % Refinement
-Xi = linspace(0,1,11);
+Xi = linspace(0,1,7);
 Xi = Xi(2:end-1);
-domain.uniform_k_refine(Xi,2);
+domain.uniform_k_refine(Xi,1);
 
 E = 10e5;
 vu = 0.3;
@@ -60,7 +60,7 @@ id = asb.id_matrix;
 
 
 
-dirichlet_boundaries = boundaries([1 2],:);
+dirichlet_boundaries = boundaries([1 2 5 6],:);
 x_boundary = dirichlet_boundaries(1,:);
 x_points = x_boundary{2};
 x_dofs = id(1,x_points);
@@ -69,6 +69,12 @@ y_boundary = dirichlet_boundaries(2,:);
 y_points = y_boundary{2};
 y_dofs = id(2,y_points);
 
-clamped_dofs = unique([x_dofs(:);y_dofs(:)]);
-g = 0;
+z_boundary = dirichlet_boundaries([3 4],:);
+z_points = cell2mat(z_boundary(:,2));
+z_dofs = id(3,:);
+
+
+clamped_dofs = unique([x_dofs(:);y_dofs(:); z_dofs(:)]);
+g = zeros(numel(clamped_dofs),1);
 [d, F, solution] = asb.dirichlet_linear_solve(K,F,g,clamped_dofs);
+[stress, strain] = asb.stress_strain(d);
