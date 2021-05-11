@@ -160,7 +160,7 @@ classdef Assembler
                         element_local_mapping, element_ranges, e);
                     Jmod = abs(J*qw(n));
                     for dd=1:d
-                        F_e(:,d) = F_e(:,d) +Jmod*f(d)*(R');
+                        F_e(:,d) = F_e(:,d) +Jmod*f(d)*(R);
                     end
                 end
                 idx = lm(:,e)';
@@ -169,44 +169,47 @@ classdef Assembler
             F = sparse(F);
         end
         
-        function d = L2_projection(obj,F)
-           [global_basis_index, element_local_mapping, element_ranges] = ...
-                GetConnectivityArrays(obj.domain);
-            [~, lm] = BuildGlobalLocalMatrices(element_local_mapping, d);
-            
-            [qp, qw] = obj.quad_rule;
-            n_quad = length(qw);
-            
-            ndof = max(max(element_local_mapping))*d;
-            [nel_dof, nel] = size(element_local_mapping);
-            
-            M = zeros(ndof);
-            
-            for e=1:nel
-                M_e = zeros(nel_dof);
-                for n=1:n_quad
-                    q = qp(n,:);
-                    [R, ~, J] = FastShape(obj.domain, q, global_basis_index, ...
-                        element_local_mapping, element_ranges, e);
-                    Jmod = abs(J*qw(n));
-                    M_e = M_e +Jmod*(R'*R);
-                end
-                idx = lm(:,e)';
-                M(idx,idx) = M(idx,idx) +M_e;
-            end
-            M = sparse(M);
-            d = M\F;
-        end
-        
         function [d, F, solution] = dirichlet_linear_solve(obj,K,F,g,boundaries)
             d = zeros(size(F));
             free_dofs = setdiff(1:length(d),boundaries);
-            d(boundaries) = g;
+            d(boundaries) = g(:);
             F(free_dofs) = F(free_dofs) - K(free_dofs,boundaries)*d(boundaries);
             d(free_dofs) = K(free_dofs,free_dofs)\F(free_dofs);
-            solution = Solution(obj.domain, obj.dimensions, d);
+            solution = Solution(obj, d);
         end
-       
+        
+        function M = L2_projector(obj,nd)
+           d = nd;
+           [global_basis_index, element_local_mapping, element_ranges] = ...
+                GetConnectivityArrays(obj.domain);
+           [~, lm] = BuildGlobalLocalMatrices(element_local_mapping, d);
+            
+           [qp, qw] = obj.quad_rule;
+           n_quad = length(qw);
+            
+           ndof = max(max(element_local_mapping))*d;
+           [nel_dof, nel] = size(element_local_mapping);
+            
+           M = zeros(ndof);
+            
+           for e=1:nel
+               M_e = zeros(nel_dof*d);
+               for n=1:n_quad
+                   q = qp(n,:);
+                   [R, ~, J] = FastShape(obj.domain, q, global_basis_index, ...
+                       element_local_mapping, element_ranges, e);
+                   Jmod = abs(J*qw(n));
+                   N = kron(R',eye(d));
+                   M_e = M_e +Jmod*(N'*N);
+               end
+               idx = lm(:,e)';
+               M(idx,idx) = M(idx,idx) +M_e;
+           end
+           M = sparse(M);         
+        end   
         
     end
+       
+        
 end
+

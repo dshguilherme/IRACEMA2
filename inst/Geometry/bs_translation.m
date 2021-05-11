@@ -1,4 +1,4 @@
-function bs_translation(geometry, vector)
+function geometry_obj = bs_translation(geometry, vector)
 assert(length(vector) == 3, "ERROR: input vector must be tridimensional");
 
 vector = [vector 0];

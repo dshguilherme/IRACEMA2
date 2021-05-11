@@ -167,6 +167,75 @@ classdef Elastic < Assembler
                 F = sparse(F);
         end
         
+        function [stress_sol, strain_sol] = stress_strain(obj, d_solution)
+          d = obj.dimensions;
+           ss_d = d+nchoosek(d,2);          
+          [global_basis_index, element_local_mapping, element_ranges] = ...
+               GetConnectivityArrays(obj.domain);
+           [~, lm] = BuildGlobalLocalMatrices(element_local_mapping, d);
+           [id2, lm2] = BuildGlobalLocalMatrices(element_local_mapping, ss_d);
+           
+           [qp, qw] = obj.quad_rule;
+           n_quad = length(qw);
+           
+           ndof = max(max(element_local_mapping))*d;
+           [nel_dof, nel] = size(element_local_mapping);
+
+           sF = zeros(ndof*ss_d/d,1);
+           eF = sF;
+           M = zeros(ndof*ss_d/d);
+           for e=1:nel
+                sF_e = zeros(nel_dof,ss_d);
+                eF_e = zeros(nel_dof,ss_d);
+                M_e = zeros(nel_dof*ss_d);
+                for n=1:n_quad
+                    q = qp(n,:);
+                    
+                    [R, dR, J] = FastShape(obj.domain, q, global_basis_index, ...
+                        element_local_mapping, element_ranges, e);
+                    Jmod = abs(J*qw(n));
+                    % There should be a better way to write this
+                    B = zeros(d,nel_dof*d);
+                    for i=1:d
+                        B(i,i:d:end) = dR(:,i);
+                    end
+                    if d == 2
+                        B(3,1:d:end) = dR(:,2);
+                        B(3,2:d:end) = dR(:,1);
+                    elseif d == 3
+                        B(4,2:d:end) = dR(:,3);
+                        B(4,3:d:end) = dR(:,2);
+                        B(5,1:d:end) = dR(:,3);
+                        B(5,3:d:end) = dR(:,1);
+                        B(6,1:d:end) = dR(:,2);
+                        B(6,2:d:end) = dR(:,1);
+                    else
+                        error('Could not build stress-strain matrix: obj.dimension should be 2 or 3');
+                    end
+                    C = obj.stress_tensor;
+                    epsilon_e = B*d_solution(lm(:,e));
+                    sigma_e = C*epsilon_e;
+                    for i=1:ss_d
+                        sF_e(:,ss_d) = sF_e(:,ss_d) +Jmod*R*sigma_e(i);
+                        eF_e(:,ss_d) = eF_e(:,ss_d) +Jmod*R*epsilon_e(i);
+                    end
+                    N = kron(R',eye(ss_d));
+                    M_e = M_e +Jmod*(N'*N);
+                end               
+                idx = lm2(:,e)';
+                sF(idx) = sF(idx) +sF_e(:);
+                eF(idx) = eF(idx) +eF_e(:);
+                M(idx,idx) = M(idx,idx) +M_e;
+           end
+           sF = sparse(sF);
+           eF = sparse(eF);
+           M = sparse(M);
+           stress = M\sF;
+           strain = M\eF;
+           stress_sol = Solution(obj, stress);
+           strain_sol = Solution(obj, strain);
+        end
+  
     end
     
 end
