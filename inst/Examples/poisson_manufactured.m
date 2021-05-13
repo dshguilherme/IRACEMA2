@@ -34,3 +34,9 @@ dirichlet_cp = P(cpoints);
 u = @(x) 1 +(x(1).^2) +2*(x(2).^2);
 g = cellfun(u,dirichlet_cp);
 [d, F, solution] = asb.dirichlet_linear_solve(K,F,g,cpoints);
+solution.plot_solution(1);
+xlim([-.1 1.1]);
+ylim([-.1 1.1]);
+grid on
+pbaspect([1 1 1]);
+colormap("hot");

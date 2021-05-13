@@ -97,7 +97,7 @@ classdef Solution < Geometry
                     W = obj.knots{3}; 
                     sw = FindSpanLinear(nw-1,pw,w,W);
                                         
-                    P = obj.points;
+                    P = obj.cpoints;
                     P = P(su-pu+1:su+1,sv-pv+1:sv+1,sw-pw+1:sw+1);
                     P = cell2mat(P(:));
                     weights = P(:,end);

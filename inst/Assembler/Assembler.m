@@ -151,7 +151,7 @@ classdef Assembler
             ndof = max(max(element_local_mapping))*d;
             [nel_dof, nel] = size(element_local_mapping);
             
-            F = zeros(ndof*d,1);
+            F = zeros(ndof,1);
            for e=1:nel
                 F_e = zeros(nel_dof,d);
                 for n=1:n_quad
@@ -170,6 +170,7 @@ classdef Assembler
         end
         
         function [d, F, solution] = dirichlet_linear_solve(obj,K,F,g,boundaries)
+            boundaries = boundaries(:);
             d = zeros(size(F));
             free_dofs = setdiff(1:length(d),boundaries);
             d(boundaries) = g(:);
