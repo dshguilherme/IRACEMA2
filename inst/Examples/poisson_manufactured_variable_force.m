@@ -1,18 +1,18 @@
-%% Example 1: Poisson with method of manufactured solutions
+%% Example 2: Poisson with method of manufactured solutions different function
 
-% Solution: u = 1 + x^2 +2y^2
-% -lap(u) = f -> f = -6
-% with Dirichlet Conditions = 1 + x^2 +2y^2
+% Solution: u = 2^(4*a)*(x^a)*((1-x)^a)*(y^a)*(1-y)^a
+% -lap(u) = f -> f = 5*(pi^2)*sen(pi*x)*sen(pi*y)
+% with Dirichlet Conditions = 0
 
 % Geometry
 clearvars
 close all
 clc
-
+a = 10;
 error_norm = zeros(10,1);
 refinements = ceil(logspace(0,2,10) +2);
 for idx =1:10
-    clearvars -except idx error_norm refinements
+    clearvars -except idx error_norm refinements a
     P1 = [0 0 0 1];
     P2 = [1 0 0 1];
     U = [0 0 1 1];
@@ -23,16 +23,22 @@ for idx =1:10
     % Refinement
     Xi = linspace(0,1,refinements(idx));
     Xi = Xi(2:end-1);
-%     domain.degree_elevate(1,1);
-%     domain.degree_elevate(1,2);
+    domain.degree_elevate(1,1);
+    domain.degree_elevate(1,2);
     domain.knot_refine(Xi,1);
     domain.knot_refine(Xi,2);
-
+    
     % Assembly
     asb = Poisson(1,"gauss",1,domain);
     K = asb.build_stiffness;
-    f = -6;
-    F = asb.constant_force(f);
+    fx1 = @(x) (2^(4*a))*(x(2)^a)*((1-x(2))^a);
+    fx2 = @(x) (x(1)^a)*a*((a-1)*(1-x(1))^(a-2)) -a*((1-x(1))^(a-1)*a*x(1)^(a-1)) ...
+        +a*(x(1)^(a-1))*(-a*((1-x(1))^(a-1))) +((1-x(1))^a)*a*(a-1)*(x(1)^(a-2));
+    fy1 = @(x) (2^(4*a))*(x(1)^a)*((1-x(1))^a);
+    fy2 = @(x) (x(2)^a)*a*((a-1)*(1-x(2))^(a-2)) -a*((1-x(2))^(a-1)*a*x(2)^(a-1)) ...
+        +a*(x(2)^(a-1))*(-a*((1-x(2))^(a-1))) +((1-x(2))^a)*a*(a-1)*(x(2)^(a-2));
+    f = @(x) -(fx1(x)*fx2(x) +fy1(x)*fy2(x));
+    F = asb.variable_force(f);
 
     % Boundary Conditions
     boundaries = domain.extract_boundaries;
@@ -41,7 +47,7 @@ for idx =1:10
     cpoints = unique(cpoints);
     P = domain.points;
     dirichlet_cp = P(cpoints);
-    u = @(x) 1 +(x(1).^2) +2*(x(2).^2);
+    u = @(x) (2^(4*a))*(x(1)^a)*((1-x(1))^a)*(x(2)^a)*((1-x(2))^a);
     g = cellfun(u,dirichlet_cp);
     [d, F, solution] = asb.dirichlet_linear_solve(K,F,g,cpoints);
     % h = solution.plot_solution(1);
@@ -55,9 +61,3 @@ end
     ylabel('L_2 error norm','FontWeight','bold')
     grid on
     set(gca,'FontSize',20)
-
-% xlim([-.1 1.1]);
-% ylim([-.1 1.1]);
-% grid on
-% pbaspect([1 1 1]);
-% colormap("jet");

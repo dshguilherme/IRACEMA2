@@ -13,9 +13,9 @@ U = [0 0 1 1];
 V = U;
 p = [1 1];
 
-domain = Geometry(2, {U,V}, {P1,P2; {P3,P4},p);
+domain = Geometry(2, {U,V}, {P1,P2,P3,P4},p);
 
-domain = geo_extrusion(domain,[0 0 20*L]);
+domain = bs_extrusion(domain,[0 0 20*L]);
 
 rho = 1;
 E = 10e3;

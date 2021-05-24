@@ -28,8 +28,12 @@ dQ = dB*Weights;
 R = B'.*Weights/Q;
 dRdu = Weights.*(Q*dB'-dQ*B')/(Q*Q);
 % x = sum((R.*P));
-dxdu = P.*dRdu;
+dxdu = sum(P.*dRdu);
+dXdU = dxdu';
+dUdX = pinv(dXdU);
+dudx = dXdU(:,1)';
+
 tmp = element_ranges(element,2,:) - element_ranges(element,1,:);
-J = norm(sum(dxdu))*tmp(1);
-dR = dRdu/J;
+J = norm(dxdu*tmp(1));
+dR = dRdu*dudx;
 end

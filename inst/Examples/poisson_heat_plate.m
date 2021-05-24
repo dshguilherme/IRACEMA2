@@ -55,8 +55,9 @@ g = T_d;
 
 %Post processing
 solution.plot_solution(1);
-colormap("hot");
+colormap("jet");
 xlim([-.2 0.8]);
 ylim([-.1 1.1]);
 pbaspect([1 1 1]);
 [x, d] = solution.eval_solution([1,0.4])
+

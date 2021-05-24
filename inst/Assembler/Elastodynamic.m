@@ -10,7 +10,7 @@ classdef Elastodynamic < Elastic
         function obj = Elastodynamic(rho,young,poisson,quadrature,dimensions,domain)
             obj@Elastic(young,poisson,quadrature,dimensions,domain);
             obj.density = rho;
-            obj.speed_of_sound = sqrt(obj.young/rho);
+            obj.speed_of_sound = sqrt(obj.young_modulus/rho);
         end
         
         function M =  build_mass(obj)
@@ -58,7 +58,8 @@ classdef Elastodynamic < Elastic
            K = zeros(ndof);
            M = zeros(ndof);
            for e=1:nel
-                K_e = zeros(nel_dof);
+                K_e = zeros(nel_dof*d);
+                M_e = K_e;
                 for n=1:n_quad
                     q = qp(n,:);
                     [R, dR, J] = FastShape(obj.domain, q, global_basis_index, ...
@@ -83,7 +84,7 @@ classdef Elastodynamic < Elastic
                     else
                         error('Could not build stress-strain matrix: obj.dimension should be 2 or 3');
                     end
-                    C = obj.tensor;
+                    C = obj.D;
                     K_e = K_e +Jmod*B'*C*B;
                     N = kron(R',eye(d));
                     M_e = M_e +Jmod*obj.density*(N'*N);
@@ -95,7 +96,8 @@ classdef Elastodynamic < Elastic
            K = sparse(K);
            M = sparse(M);            
         end
-         function [K_c, M_c] = clamp_boundary(obj,K, M)
+        
+        function [K_c, M_c] = clamp_boundary(obj,K, M)
             boundaries = obj.domain.extract_boundaries;
             clamp_dofs = boundaries(:,2);
             clamp_dofs = unique(cell2mat(clamp_dofs(:)));        
@@ -108,6 +110,8 @@ classdef Elastodynamic < Elastic
             
             M_c(clamp_dofs,:) = [];
             M_c(:,clamp_dofs) = [];
+            K_c = sparse(K_c);
+            M_c = sparse(M_c);
         end
         
         function [K_c, M_c] = clamp_dofs(obj,K,M,dofs)
@@ -119,8 +123,34 @@ classdef Elastodynamic < Elastic
             
             M_c(dofs,:) = [];
             M_c(:,dofs) = [];  
+            K_c = sparse(K_c);
+            M_c = sparse(M_c);
         end
-           
+         function [vecs, omega, solution_cell] = eigensolve(obj,K,M,n_modes,clamp_dofs)
+            [K_c, M_c] = obj.clamp_dofs(K,M,clamp_dofs);
+            
+            [vecs, omega] = eigs(K_c,M_c,n_modes,'sm');
+            omega = sqrt(diag(omega));
+            
+            [s1, s2] = size(vecs);
+            dofs = sort(clamp_dofs,'asc');
+            ndof = s1+numel(dofs);
+            
+            padding = zeros(1, s2);
+            for i=1:numel(dofs)
+                if dofs(i) == 1
+                    vecs = [padding; vecs(1:end,:)];
+                elseif dofs(i) == ndof
+                    vecs = [vecs(1:end,:); padding];
+                else
+                    vecs = [vecs(1:dofs(i)-1,:); padding; vecs(dofs(i):end,:)];
+                end
+            end
+            solution_cell = cell(n_modes);
+            for i=1:n_modes
+                solution_cell{i} = Solution(obj, vecs(:,i));
+            end
+        end          
         function integrate_time(varargin)
             error('Not currently implemented.')
         end

@@ -19,7 +19,7 @@ alpha = 1e3;
 domain.degree_elevate(1,1);
 domain.degree_elevate(1,2);
 
-Xi = linspace(0,1,101);
+Xi = linspace(0,1,21);
 Xi = Xi(2:end-1);
 domain.knot_refine(Xi,1);
 domain.knot_refine(Xi,2);
@@ -28,10 +28,13 @@ domain.knot_refine(Xi,2);
 asb = Helmholtz(rho,alpha,"gauss",1,domain);
 [K, M] = asb.build_matrices;
 
-[K_c, M_c] = asb.clamp_boundary(K,M);
+% Boundary Conditions
+clamp_dofs = domain.extract_boundaries;
+clamp_dofs = clamp_dofs(:,2);
+clamp_dofs = unique(cell2mat(clamp_dofs(:)));
+
 % Solution
-[~, omega] = eigs(K_c,M_c,length(K_c),'sm');
-omega = sqrt(diag(omega));
+[vecs, omega, solution] = asb.eigensolve(K,M,10,clamp_dofs);
 
 z = 1:numel(omega);
 y = zeros(numel(omega),1);
