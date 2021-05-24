@@ -94,6 +94,8 @@ classdef Helmholtz < Poisson
             
             M_c(clamp_dofs,:) = [];
             M_c(:,clamp_dofs) = [];
+            K_c = sparse(K_c);
+            M_c = sparse(M_c);
         end
         
         function [K_c, M_c] = clamp_dofs(obj,K,M,dofs)
@@ -105,6 +107,34 @@ classdef Helmholtz < Poisson
             
             M_c(dofs,:) = [];
             M_c(:,dofs) = [];  
+            K_c = sparse(K_c);
+            M_c = sparse(M_c);
+        end
+        
+        function [vecs, omega, solution_cell] = eigensolve(obj,K,M,n_modes,clamp_dofs)
+            [K_c, M_c] = obj.clamp_dofs(K,M,clamp_dofs);
+            
+            [vecs, omega] = eigs(K_c,M_c,n_modes,'sm');
+            omega = sqrt(diag(omega));
+            
+            [s1, s2] = size(vecs);
+            dofs = sort(clamp_dofs,'asc');
+            ndof = s1+numel(dofs);
+            
+            padding = zeros(1, s2);
+            for i=1:numel(dofs)
+                if dofs(i) == 1
+                    vecs = [padding; vecs(1:end,:)];
+                elseif dofs(i) == ndof
+                    vecs = [vecs(1:end,:); padding];
+                else
+                    vecs = [vecs(1:dofs(i)-1,:); padding; vecs(dofs(i):end,:)];
+                end
+            end
+            solution_cell = cell(n_modes);
+            for i=1:n_modes
+                solution_cell{i} = Solution(obj, vecs(:,i));
+            end
         end
         
     end

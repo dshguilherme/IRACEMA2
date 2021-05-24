@@ -298,11 +298,6 @@ classdef Geometry < handle
                     h = surf(x,y,z);
                     set(h,'edgecolor','none','facecolor',[0 0 1],'FaceLighting','phong');
                 case 3
-                   u = linspace(0,1,100);
-                   v = u;
-                   x = zeros(length(u),length(v));
-                   y = x;
-                   z = x;
                    b = obj.extract_boundaries;
                    b = b(:,1);
                    h = cell(6,1);

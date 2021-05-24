@@ -5,6 +5,7 @@ classdef Elastic < Assembler
         young_modulus;
         poisson_ratio;
         stress_tensor;
+        D;
         lambda;
         mu;
         
@@ -21,12 +22,31 @@ classdef Elastic < Assembler
             lambda = poisson*young/((1+poisson)*(1-2*poisson));
             mu = young/(2*(1+poisson));
             
-            tensor = zeros(2*n -(1-mod(n,2))); % Gambiarra para 2D e 3D
-           
-            tensor(1:n,1:n) = lambda+2*mu*eye(n);
-            tensor(n+1:end,n+1:end) = mu*eye(n -(1-mod(n,2)));
-            
-            obj.stress_tensor = tensor;
+            c = zeros(n,n,n,n);
+            D = zeros(2*n -(1-mod(n,2)));
+            for i=1:2
+                for j=1:2
+                    for k=1:2
+                        for ell = 1:2
+                            c(i,j,k,ell) = ...
+                                kronDelta(i,j)*kronDelta(k,ell)*lambda ...
+                                +mu*(kronDelta(i,k)*kronDelta(j,ell) ...
+                                + kronDelta(i,ell)*kronDelta(j,k));
+                            if n == 2
+                                I = Voigt2D(i,j);
+                                J = Voigt2D(k,ell);
+                            elseif n == 3
+                                I = Voigt3D(i,j);
+                                J = Voigt3D(k,ell);
+                            end
+                            D(I,J) = c(i,j,k,ell);
+                        end
+                    end
+                end
+            end
+                   
+            obj.stress_tensor = c;
+            obj.D = D;
             obj.young_modulus = young;
             obj.poisson_ratio = poisson;
             obj.lambda = lambda;
@@ -74,8 +94,8 @@ classdef Elastic < Assembler
                     else
                         error('Could not build stress-strain matrix: obj.dimension should be 2 or 3');
                     end
-                    C = obj.stress_tensor;
-                    K_e = K_e +Jmod*(B'*C)*B;
+                    D = obj.D;
+                    K_e = K_e +Jmod*(B'*D)*B;
                 end
                 idx = lm(:,e)';
                 K(idx,idx) = K(idx,idx) +K_e;
@@ -84,46 +104,37 @@ classdef Elastic < Assembler
         end
 
         function F = variable_neumann_bc(obj,F,h,boundaries)
-            domains = boundaries(:,1);
             d = obj.dimensions;
-            id = obj.id_matrix;
-
-            for i=1:numel(domains)
-                asb = Assembler("gauss",d,domains{i});
-                [qp, qw] = asb.quad_rule;
-                [global_basis_index, element_local_mapping, element_ranges] = ...
-                    GetConnectivityArrays(domains{i});
+            asb = Assembler("gauss",d,boundaries{1});
+            [qp, qw] = asb.quad_rule;
+                 [global_basis_index, element_local_mapping, element_ranges] = ...
+                    GetConnectivityArrays(boundaries{1});
                 [~, lm] = BuildGlobalLocalMatrices(element_local_mapping,d);
                 
                 n_quad = length(qw);
                 ndof = max(max(element_local_mapping))*d;
                 [nel_dof, nel] = size(element_local_mapping);
                 Fi = zeros(ndof,1);
-                
                 for e=1:nel
                     F_e = zeros(nel_dof,d);
                     for n=1:n_quad
                         q = qp(n,:);
-                        u = q/2 +0.5;
-                        x = domains{i}.eval_point(u);
-                        [R, ~, J] = FastShape(domains{i}, q, global_basis_index, ...
+                        [R, ~, J] = FastShape(boundaries{1}, q, global_basis_index, ...
                             element_local_mapping, element_ranges, e);
                         Jmod = abs(J*qw(n));
-                        f = h(x);
+                        u = 0.5*q +0.5;
+                        f = h(u);
                         for dd=1:d
-                            F_e(:,dd) = F_e(:,dd) +Jmod*f(dd)*(R);
+                            F_e(:,dd) = F_e(:,dd) + Jmod*f(dd)*R;
                         end
-
                     end
                     idx = lm(:,e)';
                     Fi(idx) = Fi(idx) +F_e(:);
                 end
-                Fi = sparse(Fi);
-                bcpts = boundaries{i,2};
-                bdofs = id(:,bcpts);
-                bdofs = bdofs(:);
-                F(bdofs) = F(bdofs) +Fi;                
-            end
+                id = obj.id_matrix;
+                dofs = id(:,boundaries{2});
+                F(dofs(:)) = F(dofs(:))+Fi(:);
+                F = sparse(F);
         end        
         
         function F = constant_neumann_bc(obj,F,h,boundaries)
@@ -167,33 +178,29 @@ classdef Elastic < Assembler
                 F = sparse(F);
         end
         
-        function [stress_sol, strain_sol] = stress_strain(obj, d_solution)
+        function [stress, sd] = calculate_stresses(obj, d_solution)
           d = obj.dimensions;
-           ss_d = d+nchoosek(d,2);          
           [global_basis_index, element_local_mapping, element_ranges] = ...
                GetConnectivityArrays(obj.domain);
-           [~, lm] = BuildGlobalLocalMatrices(element_local_mapping, d);
-           [id2, lm2] = BuildGlobalLocalMatrices(element_local_mapping, ss_d);
+          [~, lm] = BuildGlobalLocalMatrices(element_local_mapping, d);
+          [~, lm2] = BuildGlobalLocalMatrices(element_local_mapping, length(obj.D));
            
            [qp, qw] = obj.quad_rule;
            n_quad = length(qw);
            
            ndof = max(max(element_local_mapping))*d;
            [nel_dof, nel] = size(element_local_mapping);
-
-           sF = zeros(ndof*ss_d/d,1);
-           eF = sF;
-           M = zeros(ndof*ss_d/d);
+           
+           M = zeros(ndof*length(obj.D)/d);
+           F = zeros(ndof*length(obj.D)/d,1);
+           stress = zeros(nel,n_quad,length(obj.D));
            for e=1:nel
-                sF_e = zeros(nel_dof,ss_d);
-                eF_e = zeros(nel_dof,ss_d);
-                M_e = zeros(nel_dof*ss_d);
-                for n=1:n_quad
+               Fs_e = zeros(length(obj.D),nel_dof);
+               M_e = zeros(nel_dof*length(obj.D));
+               for n=1:n_quad
                     q = qp(n,:);
-                    
                     [R, dR, J] = FastShape(obj.domain, q, global_basis_index, ...
                         element_local_mapping, element_ranges, e);
-                    Jmod = abs(J*qw(n));
                     % There should be a better way to write this
                     B = zeros(d,nel_dof*d);
                     for i=1:d
@@ -212,30 +219,21 @@ classdef Elastic < Assembler
                     else
                         error('Could not build stress-strain matrix: obj.dimension should be 2 or 3');
                     end
-                    C = obj.stress_tensor;
-                    epsilon_e = B*d_solution(lm(:,e));
-                    sigma_e = C*epsilon_e;
-                    for i=1:ss_d
-                        sF_e(:,ss_d) = sF_e(:,ss_d) +Jmod*R*sigma_e(i);
-                        eF_e(:,ss_d) = eF_e(:,ss_d) +Jmod*R*epsilon_e(i);
+                    C = obj.D;
+                    strain = B*d_solution(lm(:,e))*J;
+                    stress(e,n,:) = C*strain;
+                    for dd=1:length(C)
+                        Fs_e(dd,:) = Fs_e(dd,:) +qw(n)*R'*stress(e,n,dd);
                     end
-                    N = kron(R',eye(ss_d));
-                    M_e = M_e +Jmod*(N'*N);
-                end               
-                idx = lm2(:,e)';
-                sF(idx) = sF(idx) +sF_e(:);
-                eF(idx) = eF(idx) +eF_e(:);
-                M(idx,idx) = M(idx,idx) +M_e;
+                    N = kron(R',eye(length(C)));
+                    M_e = M_e +J*qw(n)*N'*N;
+               end
+               idx = lm2(:,e)';
+               M(idx,idx) = M(idx,idx) +M_e;
+               F(idx) = F(idx) +Fs_e(:);
            end
-           sF = sparse(sF);
-           eF = sparse(eF);
-           M = sparse(M);
-           stress = M\sF;
-           strain = M\eF;
-           stress_sol = Solution(obj, stress);
-           strain_sol = Solution(obj, strain);
-        end
-  
+        sd = M\F;
+        
     end
-    
+    end
 end

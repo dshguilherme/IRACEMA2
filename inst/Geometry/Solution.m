@@ -18,11 +18,12 @@ classdef Solution < Geometry
             obj.domain = asb.domain;
             obj.id = asb.id_matrix;
             obj.d = d;
-            [~, s2] = size(obj.id);
+            
+            [s2, ~] = size(obj.id);
             cpoints = cell(1,s2);
             for i=1:s2
-                idx = obj.id(:,i);
-                cpoints{i} = [d(idx)' 1];
+                idx = obj.id(i,:);
+                cpoints{i} = [d(idx) 1];
             end
             cpoints = reshape(cpoints,size(obj.points));
             obj.cpoints = cpoints;
@@ -97,7 +98,7 @@ classdef Solution < Geometry
                     W = obj.knots{3}; 
                     sw = FindSpanLinear(nw-1,pw,w,W);
                                         
-                    P = obj.points;
+                    P = obj.cpoints;
                     P = P(su-pu+1:su+1,sv-pv+1:sv+1,sw-pw+1:sw+1);
                     P = cell2mat(P(:));
                     weights = P(:,end);
@@ -111,6 +112,21 @@ classdef Solution < Geometry
                     R = B'.*weights/Q;
                     
                     d = sum((R.*P));    
+            end
+        end
+        
+        function solution_cell = extract_solution_boundaries(obj)
+            assert(obj.domain.rank == 3, "This function is only usable for rank 3 solutions");
+            b = obj.domain.extract_boundaries;
+            dof = b(:,2);
+            b = b(:,1);
+            d = size(obj.id,1);
+            solution_cell = cell(numel(b),1);
+            for i=1:numel(b)
+                asb = Assembler("gauss",d,b{i});
+                dofs = obj.id(:,dof{i});
+                s = obj.d(dofs);
+                solution_cell{i} = Solution(asb,s);
             end
         end
         
@@ -149,21 +165,37 @@ classdef Solution < Geometry
                     set(h,'edgecolor','none','FaceLighting','phong');
                 
                case 3
-                   error('NOT YET IMPLEMENTED');
-                   u = linspace(0,1,100);
-                   v = u;
-                   x = zeros(length(u),length(v));
-                   y = x;
-                   z = x;
-                   c = x;
-                   b = obj.domain.extract_boundaries;
-                   b = b(:,1);
+                   b_sols = obj.extract_solution_boundaries;
                    hold on
                    for k=1:6
-                       h{k} = b{k}.plot_solution(dim);
+                      h{k} = b_sols{k}.plot_solution(dim);
                    end
 
            end
+        end
+        
+        function [error_norm, energy_norm] = l2_error_norm(obj,fun,dim)
+            asb = obj.asb;
+            d = asb.dimensions;
+         [global_basis_index, element_local_mapping, element_ranges] = ...
+                GetConnectivityArrays(asb.domain);
+         [~, lm] = BuildGlobalLocalMatrices(element_local_mapping, d);
+         [qp, qw] = asb.quad_rule;
+         n_quad = length(qw);
+         [~, nel] = size(element_local_mapping);
+         error_norm = 0;
+         energy_norm = 0;
+         for e=1:nel
+             for n=1:n_quad
+                 q = qp(n,:);
+                 csi = q/2 +0.5;
+                 [x, uh] = obj.eval_solution(csi);
+                 error_norm = qw(n)*(fun(x)-uh(dim))^2;
+                 energy_norm = qw(n)*(uh(dim)*uh(dim));
+             end
+         end
+         energy_norm = sqrt(energy_norm);
+         error_norm = sqrt(error_norm)/energy_norm;
         end
         
     end

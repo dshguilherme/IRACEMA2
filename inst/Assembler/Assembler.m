@@ -120,7 +120,7 @@ classdef Assembler
             
             F = zeros(ndof*d,1);
            for e=1:nel
-                F_e = zeros(nel_dof,d);
+                F_e = zeros(d,nel_dof);
                 for n=1:n_quad
                     q = qp(n,:);
                     u = q/2 +0.5;
@@ -129,7 +129,7 @@ classdef Assembler
                         element_local_mapping, element_ranges, e);
                     Jmod = abs(J*qw(n));
                     for dd=1:d
-                        F_e(:,d) = F_e(:,d) +Jmod*fun(x)*(R');
+                        F_e(d,:) = F_e(d,:) +Jmod*fun(x)*(R');
                     end
                 end
                 idx = lm(:,e)';
@@ -151,16 +151,16 @@ classdef Assembler
             ndof = max(max(element_local_mapping))*d;
             [nel_dof, nel] = size(element_local_mapping);
             
-            F = zeros(ndof*d,1);
+            F = zeros(ndof,1);
            for e=1:nel
-                F_e = zeros(nel_dof,d);
+                F_e = zeros(d,nel_dof);
                 for n=1:n_quad
                     q = qp(n,:);
                     [R, ~, J] = FastShape(obj.domain, q, global_basis_index, ...
                         element_local_mapping, element_ranges, e);
                     Jmod = abs(J*qw(n));
                     for dd=1:d
-                        F_e(:,d) = F_e(:,d) +Jmod*f(d)*(R);
+                        F_e(d,:) = F_e(d,:) +Jmod*f(d)*(R');
                     end
                 end
                 idx = lm(:,e)';
@@ -170,12 +170,14 @@ classdef Assembler
         end
         
         function [d, F, solution] = dirichlet_linear_solve(obj,K,F,g,boundaries)
+            boundaries = boundaries(:);
             d = zeros(size(F));
             free_dofs = setdiff(1:length(d),boundaries);
             d(boundaries) = g(:);
             F(free_dofs) = F(free_dofs) - K(free_dofs,boundaries)*d(boundaries);
             d(free_dofs) = K(free_dofs,free_dofs)\F(free_dofs);
-            solution = Solution(obj, d);
+            asb = obj;
+            solution = Solution(asb, d);
         end
         
         function M = L2_projector(obj,nd)
