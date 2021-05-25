@@ -23,8 +23,8 @@ for idx =1:10
     % Refinement
     Xi = linspace(0,1,refinements(idx));
     Xi = Xi(2:end-1);
-%     domain.degree_elevate(1,1);
-%     domain.degree_elevate(1,2);
+    domain.degree_elevate(1,1);
+    domain.degree_elevate(1,2);
     domain.knot_refine(Xi,1);
     domain.knot_refine(Xi,2);
 

@@ -37,10 +37,10 @@ N = DersBasisFun(su,u,pu,1,U);
 M = DersBasisFun(sv,v,pv,1,V);
 L = DersBasisFun(sw,w,pw,1,W);
 
-B = kron(L(1,:),kron(M(1,:),N(1,:)));
-dBdu = kron(L(1,:),kron(M(1,:), N(2,:)));
-dBdv = kron(L(1,:),kron(M(2,:), N(1,:)));
-dBdw = kron(L(2,:),kron(M(1,:),N(1,:)));
+B = kron(kron(L(1,:),M(1,:)),N(1,:));
+dBdu = kron(kron(L(1,:),M(1,:)),N(2,:));
+dBdv = kron(kron(L(1,:),M(2,:)),N(1,:));
+dBdw = kron(kron(L(2,:),M(1,:)),N(1,:));
 
 Q = B*Weights;
 dQdu = dBdu*Weights;

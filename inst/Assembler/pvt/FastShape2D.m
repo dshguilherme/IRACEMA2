@@ -30,7 +30,7 @@ P = ActivePoints(:,1:3);
 N = DersBasisFun(su,u,pu,1,U);
 M = DersBasisFun(sv,v,pv,1,V);
 
-B = kron(M(1,:),N(1,:));
+B = kron(N(1,:),M(1,:));
 dBdu = kron(M(1,:), N(2,:));
 dBdv = kron(M(2,:), N(1,:));
 
