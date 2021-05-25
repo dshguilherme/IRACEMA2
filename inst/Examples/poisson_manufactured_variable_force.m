@@ -1,8 +1,8 @@
 %% Example 2: Poisson with method of manufactured solutions different function
 
-% Solution: u = 2^(4*a)*(x^a)*((1-x)^a)*(y^a)*(1-y)^a
-% -lap(u) = f -> f = 5*(pi^2)*sen(pi*x)*sen(pi*y)
-% with Dirichlet Conditions = 0
+% Solution: u = 3x^3 -0.5y^4 -xy
+% -lap(u) = f -> f = 6y^2 -18x
+% with Dirichlet Conditions = 3x^3 -0.5y^4 -xy
 
 % Geometry
 clearvars
@@ -31,13 +31,7 @@ for idx =1:10
     % Assembly
     asb = Poisson(1,"gauss",1,domain);
     K = asb.build_stiffness;
-    fx1 = @(x) (2^(4*a))*(x(2)^a)*((1-x(2))^a);
-    fx2 = @(x) (x(1)^a)*a*((a-1)*(1-x(1))^(a-2)) -a*((1-x(1))^(a-1)*a*x(1)^(a-1)) ...
-        +a*(x(1)^(a-1))*(-a*((1-x(1))^(a-1))) +((1-x(1))^a)*a*(a-1)*(x(1)^(a-2));
-    fy1 = @(x) (2^(4*a))*(x(1)^a)*((1-x(1))^a);
-    fy2 = @(x) (x(2)^a)*a*((a-1)*(1-x(2))^(a-2)) -a*((1-x(2))^(a-1)*a*x(2)^(a-1)) ...
-        +a*(x(2)^(a-1))*(-a*((1-x(2))^(a-1))) +((1-x(2))^a)*a*(a-1)*(x(2)^(a-2));
-    f = @(x) -(fx1(x)*fx2(x) +fy1(x)*fy2(x));
+    f = @(x) 6*x(2)^2 -18*x(1);
     F = asb.variable_force(f);
 
     % Boundary Conditions
@@ -47,7 +41,7 @@ for idx =1:10
     cpoints = unique(cpoints);
     P = domain.points;
     dirichlet_cp = P(cpoints);
-    u = @(x) (2^(4*a))*(x(1)^a)*((1-x(1))^a)*(x(2)^a)*((1-x(2))^a);
+    u = @(x) 3*x(1)^3 -0.5*x(2)^4 -x(1)*x(2);
     g = cellfun(u,dirichlet_cp);
     [d, F, solution] = asb.dirichlet_linear_solve(K,F,g,cpoints);
     % h = solution.plot_solution(1);

@@ -115,7 +115,7 @@ classdef Geometry < handle
                     N = DersBasisFun(su,u,pu,0,U);
                     M = DersBasisFun(sv,v,pv,0,V);
                     L = DersBasisFun(sw,w,pw,0,W);
-                    B = kron(L,kron(M,N));
+                    B = kron(kron(L,M),N);
                     
                     Q = B*weights;
                     R = B'.*weights/Q;
@@ -252,6 +252,108 @@ classdef Geometry < handle
                     end
             end
         end
+        
+        function gbi = global_basis_index(obj)
+            gbi = zeros(prod(obj.n),obj.rank);
+            for i=1:prod(obj.n)
+                switch obj.rank
+                    case 1
+                        gbi(i,1) = ind2sub(obj.n(:)',i);
+                    case 2
+                        [gbi(i,1) gbi(i,2)] = ind2sub(obj.n(:)',i);
+                    case 3
+                        [gbi(i,1) gbi(i,2), gbi(i,3)] = ind2sub(obj.n(:)',i); 
+                end
+            end
+        end
+        
+        function [elm, e_range] = element_local_mapping(obj)
+                 switch obj.rank
+                    case 1
+                        U = obj.knots{1};
+                        nu = obj.n(1);
+                        pu = obj.p(1);
+                        uU = unique(U);
+                        elm = zeros(pu+1,numel(uU)-1);
+                        e_range = zeros((numel(uV)-1)*(numel(uU)-1),2);
+                        for eu=1:numel(uU)-1                               
+                            u = 0.5*(uU(eu) +uU(eu+1));
+                            sup_u = FindSpanLinear(nu-1,pu,u,U);
+                            sup_eu = sup_u-pu+1:sup_u+1;
+                            elm(:,eu) = sup_eu;
+                            e_range(eu,1) = uU(eu);
+                            e_range(eu,2) = uU(eu+1);
+                        end
+                            
+                    case 2
+                        U = obj.knots{1};
+                        V = obj.knots{2};
+                        nu = obj.n(1);
+                        nv = obj.n(2);
+                        pu = obj.p(1);
+                        pv = obj.p(2);
+                        uU = unique(U);
+                        uV = unique(V);
+                        e = 1;
+                       elm = zeros(prod(obj.p+1),(numel(uV)-1)*(numel(uU)-1));
+                        e_range = zeros((numel(uV)-1)*(numel(uU)-1),2,2);
+                        for ev = 1:numel(uV)-1
+                            for eu=1:numel(uU)-1
+                                u = 0.5*(uU(eu) +uU(eu+1));
+                                v = 0.5*(uV(ev) +uV(ev+1));
+                                sup_u = FindSpanLinear(nu-1,pu,u,U);
+                                sup_v = FindSpanLinear(nv-1,pv,v,V);
+                                sup_eu = sup_u-pu+1:sup_u+1;
+                                sup_ev = sup_v-pv+1:sup_v+1;
+                                [UU, VV] = ndgrid(sup_eu,sup_ev);
+                                basis = [UU(:), VV(:)];
+                                elm(:,e) = sub2ind(obj.n',basis(:,1),basis(:,2));                            e_range(eu,1) = uU(eu);
+                                e_range(e,1,:) = [uU(eu) uU(eu+1)];
+                                e_range(e,2,:) = [uV(ev) uV(ev+1)];
+                                e = e+1;
+                            end
+                        end
+                     case 3
+                        U = obj.knots{1};
+                        V = obj.knots{2};
+                        W = obj.knots{3};
+                        nu = obj.n(1);
+                        nv = obj.n(2);
+                        nw = obj.n(3);
+                        pu = obj.p(1);
+                        pv = obj.p(2);
+                        pw = obj.p(3);
+                        uU = unique(U);
+                        uV = unique(V);
+                        uW = unique(W);
+                        elm = zeros(prod(obj.p+1),(numel(uW)-1)*(numel(uV)-1)*(numel(uU)-1));
+                        e_range = zeros((numel(uV)-1)*(numel(uU)-1)*(numel(uW)-1),2,3);
+                        e = 1;
+                        for ew=1:numel(uW)-1
+                            for ev=1:numel(uV)-1
+                                for eu=1:numel(uU)-1
+                                u = 0.5*(uU(eu) +uU(eu+1));
+                                v = 0.5*(uV(ev) +uV(ev+1));
+                                w = 0.5*(uW(ew) +uW(ew+1));
+                                sup_u = FindSpanLinear(nu-1,pu,u,U);
+                                sup_v = FindSpanLinear(nv-1,pv,v,V);
+                                sup_w = FindSpanLinear(nw-1,pw,w,W);
+                                sup_eu = sup_u-pu+1:sup_u+1;
+                                sup_ev = sup_v-pv+1:sup_v+1;
+                                sup_ew = sup_w-pw+1:sup_w+1;
+                                [UU,VV,WW] = ndgrid(sup_eu,sup_ev,sup_ew);
+                                basis = [UU(:) VV(:) WW(:)];
+                                elm(:,e) = sub2ind(obj.n', basis(:,1),basis(:,2),basis(:,3));
+                                e_range(e,:,1) = [uU(eu) uU(eu+1)];
+                                e_range(e,:,2) = [uV(ev) uV(ev+1)];
+                                e_range(e,:,3) = [uW(uw) uW(uw+1)];
+                                e = e+1;
+                                end
+                            end
+                        end
+                end 
+            end
+
         
         function obj = uniform_k_refine(obj,Xi,p)
             obj.degree_elevate(p,1);

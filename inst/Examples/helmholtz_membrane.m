@@ -19,7 +19,7 @@ alpha = 1e3;
 domain.degree_elevate(1,1);
 domain.degree_elevate(1,2);
 
-Xi = linspace(0,1,21);
+Xi = linspace(0,1,71);
 Xi = Xi(2:end-1);
 domain.knot_refine(Xi,1);
 domain.knot_refine(Xi,2);
@@ -34,11 +34,11 @@ clamp_dofs = clamp_dofs(:,2);
 clamp_dofs = unique(cell2mat(clamp_dofs(:)));
 
 % Solution
-[vecs, omega, solution] = asb.eigensolve(K,M,10,clamp_dofs);
+[vecs, omega, solution] = asb.eigensolve(K,M,length(K)-numel(clamp_dofs),clamp_dofs);
 
 z = 1:numel(omega);
 y = zeros(numel(omega),1);
-
+wn = zeros(numel(Xi)+3);
 for i=1:numel(Xi)+3
     for j=1:numel(Xi)+3
         wn(i,j) = pi*sqrt((i/L)^2 +(j/h)^2);

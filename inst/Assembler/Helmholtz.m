@@ -131,7 +131,7 @@ classdef Helmholtz < Poisson
                     vecs = [vecs(1:dofs(i)-1,:); padding; vecs(dofs(i):end,:)];
                 end
             end
-            solution_cell = cell(n_modes);
+            solution_cell = cell(n_modes,1);
             for i=1:n_modes
                 solution_cell{i} = Solution(obj, vecs(:,i));
             end

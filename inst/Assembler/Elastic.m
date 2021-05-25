@@ -122,8 +122,17 @@ classdef Elastic < Assembler
                         [R, ~, J] = FastShape(boundaries{1}, q, global_basis_index, ...
                             element_local_mapping, element_ranges, e);
                         Jmod = abs(J*qw(n));
-                        u = 0.5*q +0.5;
-                        f = h(u);
+                        if asb.domain.rank == 1
+                            uu = element_ranges(e,:);
+                            u = 0.5*((uu(2)-uu(1))*q +sum(uu));
+                        else
+                            for qq = 1:obj.domain.rank
+                                uu = element_ranges(e,:,qq);
+                                u(qq) = 0.5*((uu(2)-uu(1))*q(qq) +sum(uu));
+                            end
+                        end
+                        x = asb.domain.eval_point(u);
+                        f = h(x);
                         for dd=1:d
                             F_e(:,dd) = F_e(:,dd) + Jmod*f(dd)*R;
                         end
@@ -132,7 +141,7 @@ classdef Elastic < Assembler
                     Fi(idx) = Fi(idx) +F_e(:);
                 end
                 id = obj.id_matrix;
-                dofs = id(:,boundaries{2});
+                dofs = id(boundaries{2},:);
                 F(dofs(:)) = F(dofs(:))+Fi(:);
                 F = sparse(F);
         end        

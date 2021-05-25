@@ -123,7 +123,10 @@ classdef Assembler
                 F_e = zeros(d,nel_dof);
                 for n=1:n_quad
                     q = qp(n,:);
-                    u = q/2 +0.5;
+                    for qq = 1:obj.domain.rank
+                        uu = element_ranges(e,:,qq);
+                        u(qq) = 0.5*((uu(2)-uu(1))*q(qq) +sum(uu));
+                    end
                     x = obj.domain.eval_point(u);
                     [R, ~, J] = FastShape(obj.domain, q, global_basis_index, ...
                         element_local_mapping, element_ranges, e);

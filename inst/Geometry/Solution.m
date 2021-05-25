@@ -23,7 +23,7 @@ classdef Solution < Geometry
             cpoints = cell(1,s2);
             for i=1:s2
                 idx = obj.id(i,:);
-                cpoints{i} = [d(idx) 1];
+                cpoints{i} = [d(idx)' 1];
             end
             cpoints = reshape(cpoints,size(obj.points));
             obj.cpoints = cpoints;
