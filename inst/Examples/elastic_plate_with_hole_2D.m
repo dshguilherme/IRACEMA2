@@ -20,15 +20,15 @@ arc = bs_arc(center, initial_point, theta, normal);
 domain = bs_ruled_surface(line,arc);
 
 % Refinement
-% Xi = linspace(0,1,7);
-% Xi = Xi(2:end-1);
-% domain.uniform_k_refine(Xi,1);
-domain.degree_elevate(1,1)
-domain.degree_elevate(1,2)
-domain.knot_refine([0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9],1)
-domain.knot_refine([0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9],2)
+Xi = linspace(0,1,36);
+Xi = Xi(2:end-1);
+domain.uniform_k_refine(Xi,2);
+% domain.degree_elevate(4,1)
+% domain.degree_elevate(4,2)
+% domain.knot_refine([0.1 0.2 0.3 0.4 0.6 0.7 0.8 0.9],1)
+% domain.knot_refine([0.1 0.2 0.3 0.4 0.6 0.7 0.8 0.9],2)
 
-E = 1000;
+E = 1e5;
 vu = 0.3;
 
 % Assembly
@@ -48,7 +48,9 @@ zero_stress_bc = boundaries(4,:);
 id = asb.id_matrix;
 [s1 s1] = size(K);
 F = zeros(s1,1);
-h = @(x) exact_plate_hole(x,1);
+% h = [-1 0];
+F = asb.constant_neumann_bc(F,h,stress_bc);
+h = @(x) if x > -4 [0 0] else [-1 0] end;
 F = asb.variable_neumann_bc(F,h,stress_bc);
 % Dirichlet BCs
 
@@ -59,7 +61,7 @@ y_points = y_sym_bc{2};
 y_dofs = id(y_points,2);
 
 clamped_dofs = unique([x_dofs(:); y_dofs(:)]);
-
+% clamped_dofs = x_dofs(:);
 g = zeros(numel(clamped_dofs,1));
 
 % Penalty to enforce the overlapping control points
@@ -71,7 +73,7 @@ P = cell2mat(P(:));
 ppoint = find(P(:,1) == -L & P(:,2) == L);
 for i=ppoint(1):s1:length(P)
     pdofs = id([i i+1],:);
-    penaltyStiffness = 10000*[1 -1; -1 1];
+    penaltyStiffness = 1000*[1 -1; -1 1];
     px = pdofs(1,:);
     py = pdofs(2,:);
     K(px,px) = K(px,px) +penaltyStiffness;
@@ -80,11 +82,5 @@ end
 
 [d, F, solution] = asb.dirichlet_linear_solve(K,F,g,clamped_dofs);
 solution.plot_solution(1)
-[stress sd] = asb.calculate_stresses(d);
-% figure
-% clf
-% domain.plot_geo
-asb2 = Assembler("gauss",length(asb.D),domain);
-solution = Solution(asb2,sd);
-solution.plot_solution(3)
-colormap("jet")
+[x, xx] = solution.eval_solution([0 1])
+colormap(parula)

@@ -181,6 +181,7 @@ classdef Assembler
             d(free_dofs) = K(free_dofs,free_dofs)\F(free_dofs);
             asb = obj;
             solution = Solution(asb, d);
+            solution.asb = asb;
         end
         
         function M = L2_projector(obj,nd)
@@ -211,7 +212,40 @@ classdef Assembler
                M(idx,idx) = M(idx,idx) +M_e;
            end
            M = sparse(M);         
-        end   
+        end
+        
+        function F = project_function(obj,fun,nd)
+            d = nd;
+            [global_basis_index, element_local_mapping, element_ranges] = ...
+                GetConnectivityArrays(obj.domain);
+           [~, lm] = BuildGlobalLocalMatrices(element_local_mapping, d);
+            
+           [qp, qw] = obj.quad_rule;
+           n_quad = length(qw);
+            
+           ndof = max(max(element_local_mapping))*d;
+           [nel_dof, nel] = size(element_local_mapping);
+            
+           F = zeros(ndof,1);
+           for e=1:nel
+               F_e = zeros(d, nel_dof);
+               q = qp(n,:);
+               [R, ~, J] = FastShape(obj.domain, q, global_basis_index, ...
+                   element_local_mapping, element_ranges, e);
+               Jmod = abs(J*qw(n));
+               for qq = 1:obj.domain.rank
+                        uu = element_ranges(e,:,qq);
+                        u(qq) = 0.5*((uu(2)-uu(1))*q(qq) +sum(uu));
+               end
+               x = obj.domain.eval_point(u);
+               f = fun(x);
+               for dd=1:d
+                        F_e(d,:) = F_e(d,:) +Jmod*f(d)*(R');
+               end
+               idx = lm(:,e)';
+               F(idx) = F(idx) +F_e(:);
+           end
+        end
         
     end
        
