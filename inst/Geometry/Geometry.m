@@ -135,7 +135,9 @@ classdef Geometry < handle
         
         function boundaries = extract_boundaries(obj)
             r = obj.rank;
-            boundaries = cell(r*2,2);
+            boundaries = cell(r*2,3);
+            elm = obj.element_local_mapping;
+            elements = 1:size(elm,2)
             switch r
                 case 1
                     boundaries{1,1} = obj.eval_point(0);
@@ -156,7 +158,23 @@ classdef Geometry < handle
                     
                     boundaries{1,1} = Geometry(r-1,{V},P1,[pv]);
                     boundaries{2,1} = Geometry(r-1,{V},P2,[pv]);
-
+                    
+                    [s1 s2] = size(P);
+                    idx = 1:s2;
+                    b1_idx(:,2) = idx;
+                    b2_idx(:,2) = idx;
+                    b1_idx(:,1) = 1;
+                    b2_idx(:,1) = s1;
+                    
+                    b1_points = sub2ind(size(P),b1_idx(:,1),b1_idx(:,2));
+                    b2_points = sub2ind(size(P),b2_idx(:,1),b2_idx(:,2));
+                    b1_elements = elements(any(ismember(elm,b1_points,"legacy")))';
+                    b2_elements = elements(any(ismember(elm,b2_points,"legacy")))';
+                    clear b1_idx b2_idx                   
+                    
+                    boundaries{1,2} = b1_elements;
+                    boundaries{2,2} = b2_elements;
+                    
                     P3 = P(:,1);
                     P3 = P3(:);
                     P4 = P(:,end);
@@ -164,7 +182,22 @@ classdef Geometry < handle
 
                     boundaries{3,1} = Geometry(r-1,{U},P3,[pu]);
                     boundaries{4,1} = Geometry(r-1,{U},P4,[pu]);
+                    
+                    idx = 1:s1;
+                    b1_idx(:,1) = idx;
+                    b2_idx(:,1) = idx;
+                    b1_idx(:,2) = 1;
+                    b2_idx(:,2) = s2;
 
+                   
+                   b3_points = sub2ind(size(P),b1_idx(:,1),b1_idx(:,2));
+                    b4_points = sub2ind(size(P),b2_idx(:,1),b2_idx(:,2));
+                    b3_elements = elements(any(ismember(elm,b3_points,"legacy")))';
+                    b4_elements = elements(any(ismember(elm,b4_points,"legacy")))';
+                    
+                    boundaries{3,2} = b3_elements;
+                    boundaries{4,2} = b4_elements;
+                   clear b1_idx b2_idx                        
                 case 3
                     n = obj.n;
                     pu = obj.p(1);
@@ -177,23 +210,82 @@ classdef Geometry < handle
                     W = obj.knots{3};
                     
                     P = obj.points;
-         
+                    
+                    [s1 s2 s3] = size(P);
+
                     P1 = reshape(P(1,:,:),[n(2),n(3)]);
                     P2 = reshape(P(end,:,:),[n(2),n(3)]);
-                    P3 = reshape(P(:,1,:),[n(1),n(3)]);
-                    P4 = reshape(P(:,end,:),[n(1),n(3)]);
-                    P5 = reshape(P(:,:,1),[n(1),n(2)]);
-                    P6 = reshape(P(:,:,end),[n(1),n(2)]);
-
+                
                     boundaries{1,1} = Geometry(r-1,{V,W},P1,[pv,pw]);
                     boundaries{2,1} = Geometry(r-1,{V,W},P2,[pv,pw]);
+
+                    idx1 = 1:s2;
+                    idx2 = 1:s3;
+                    b1_idx(:,2) = idx1;
+                    b2_idx(:,2) = idx1;
+                    
+                    b2_idx(:,3) = idx2;
+                    b2_idx(:,3) = idx2;
+                    
+                    b1_idx(:,1) = 1;
+                    b2_idx(:,1) = s1;
+                    
+                    b1_points = sub2ind(size(P),b1_idx(:,1),b1_idx(:,2),b1_idx(:,3));
+                    b2_points = sub2ind(size(P),b2_idx(:,1),b2_idx(:,2),b2_idx(:,3));
+                    b1_elements = elements(any(ismember(elm,b1_points,"legacy")))';
+                    b2_elements = elements(any(ismember(elm,b2_points,"legacy")))';
+                    boundaries{1,2} = b1_elements;
+                    boundaries{2,2} = b2_elements;
+                    clear b1_idx b2_idx   
+                    
+                    P3 = reshape(P(:,1,:),[n(1),n(3)]);
+                    P4 = reshape(P(:,end,:),[n(1),n(3)]);
+                                        
                     boundaries{3,1} = Geometry(r-1,{U,W},P3,[pu,pw]);
                     boundaries{4,1} = Geometry(r-1,{U,W},P4,[pu,pw]);
+
+                    idx1 = 1:s1;
+                    idx2 = 1:s3;
+                    b1_idx(:,1) = idx1;
+                    b1_idx(:,1) = idx1;
+                    b1_idx(:,3) = idx2;
+                    b2_idx(:,3) = idx2;
+                    b1_idx(:,2) = 1;
+                    b2_idx(:,2) = s2;
+                     
+                    b1_points = sub2ind(size(P),b1_idx(:,1),b1_idx(:,2),b1_idx(:,3));
+                    b2_points = sub2ind(size(P),b2_idx(:,1),b2_idx(:,2),b2_idx(:,3));
+                    b1_elements = elements(any(ismember(elm,b1_points,"legacy")))';
+                    b2_elements = elements(any(ismember(elm,b2_points,"legacy")))';
+                    boundaries{3,2} = b1_elements;
+                    boundaries{4,2} = b2_elements;   
+                    clear b1_idx b2_idx
+                    
+                    P5 = reshape(P(:,:,1),[n(1),n(2)]);
+                    P6 = reshape(P(:,:,end),[n(1),n(2)]);
                     boundaries{5,1} = Geometry(r-1,{U,V},P5,[pu,pv]);
                     boundaries{6,1} = Geometry(r-1,{U,V},P6,[pu,pv]);
+                    
+                    idx1 = 1:s1;
+                    idx2 = 1:s2;
+                    b1_idx(:,1) = idx1;
+                    b1_idx(:,1) = idx1;
+                    b1_idx(:,2) = idx2;
+                    b2_idx(:,2) = idx2;
+                    b1_idx(:,1) = 1;
+                    b2_idx(:,1) = s3;
+                    
+                    b1_points = sub2ind(size(P),b1_idx(:,1),b1_idx(:,2),b1_idx(:,3));
+                    b2_points = sub2ind(size(P),b2_idx(:,1),b2_idx(:,2),b2_idx(:,3));
+                    b1_elements = elements(any(ismember(elm,b1_points,"legacy")))';
+                    b2_elements = elements(any(ismember(elm,b2_points,"legacy")))';
+                    boundaries{5,2} = b1_elements;
+                    boundaries{6,2} = b2_elements;      
+                    clear b1_idx b2_idx
             end
-            tmp = GetBoundaries(obj);
-            boundaries(:,2) = tmp;
+            for i=1:length(boundaries)
+                boundaries{i,3} = i;
+            end
         end
         
         function obj = knot_refine(obj,knots_to_add,dir)

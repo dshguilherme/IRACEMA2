@@ -161,17 +161,17 @@ classdef Elastic < Assembler
                 n_quad = length(qw);
                 ndof = max(max(element_local_mapping))*d;
                 [nel_dof, nel] = size(element_local_mapping);
-                Fi = zeros(d*ndof,1);
+                Fi = zeros(ndof,1);
                 
                 for e=1:nel
-                    F_e = zeros(nel_dof,d);
+                    F_e = zeros(d,nel_dof);
                     for n=1:n_quad
                         q = qp(n,:);
                         [R, ~, J] = FastShape(domains{i}, q, global_basis_index, ...
                             element_local_mapping, element_ranges, e);
                         Jmod = abs(J*qw(n));
                         for dd=1:d
-                            F_e(:,dd) = F_e(:,dd) +Jmod*h(dd)*(R');
+                            F_e(dd,:) = F_e(dd,:) +Jmod*h(dd)*(R');
                         end
 
                     end
@@ -180,69 +180,65 @@ classdef Elastic < Assembler
                 end
                 
                 id = obj.id_matrix;
-                dofs = id(basis);
-                dofs = dofs(:);
-                F(dofs) = F(dofs)+Fi;
+                dofs = id(boundaries{2},:);
+                F(dofs(:)) = F(dofs(:))+Fi(:);
             end
                 F = sparse(F);
+
         end
         
-        function [stress, sd] = calculate_stresses(obj, d_solution)
-          d = obj.dimensions;
-          [global_basis_index, element_local_mapping, element_ranges] = ...
+        function [stress_d, solution] = project_stress(obj, displacement)
+            C = obj.D;
+            nd = obj.dimensions;
+            sd = nd;
+            M =  obj.L2_projector(sd);
+           [global_basis_index, element_local_mapping, element_ranges] = ...
                GetConnectivityArrays(obj.domain);
-          [~, lm] = BuildGlobalLocalMatrices(element_local_mapping, d);
-          [~, lm2] = BuildGlobalLocalMatrices(element_local_mapping, length(obj.D));
-           
+           [~, lm] = BuildGlobalLocalMatrices(element_local_mapping,sd);
            [qp, qw] = obj.quad_rule;
            n_quad = length(qw);
-           
-           ndof = max(max(element_local_mapping))*d;
+           ndof = max(max(element_local_mapping))*sd;
            [nel_dof, nel] = size(element_local_mapping);
-           
-           M = zeros(ndof*length(obj.D)/d);
-           F = zeros(ndof*length(obj.D)/d,1);
-           stress = zeros(nel,n_quad,length(obj.D));
+           d = displacement;
+           F = zeros(ndof,1);
            for e=1:nel
-               Fs_e = zeros(length(obj.D),nel_dof);
-               M_e = zeros(nel_dof*length(obj.D));
+               F_e = zeros(sd, nel_dof);
                for n=1:n_quad
-                    q = qp(n,:);
-                    [R, dR, J] = FastShape(obj.domain, q, global_basis_index, ...
-                        element_local_mapping, element_ranges, e);
-                    % There should be a better way to write this
-                    B = zeros(d,nel_dof*d);
-                    for i=1:d
-                        B(i,i:d:end) = dR(:,i);
+                   q = qp(n,:);
+                   [R, dR, J] = FastShape(obj.domain, q, global_basis_index, ...
+                       element_local_mapping, element_ranges, e);
+                   Jmod = abs(qw(n)*J);
+                   B = zeros(nd, nel_dof*nd);
+                    for i=1:nd
+                        B(i,i:nd:end) = dR(:,i);
                     end
-                    if d == 2
-                        B(3,1:d:end) = dR(:,2);
-                        B(3,2:d:end) = dR(:,1);
-                    elseif d == 3
-                        B(4,2:d:end) = dR(:,3);
-                        B(4,3:d:end) = dR(:,2);
-                        B(5,1:d:end) = dR(:,3);
-                        B(5,3:d:end) = dR(:,1);
-                        B(6,1:d:end) = dR(:,2);
-                        B(6,2:d:end) = dR(:,1);
+                    if nd == 2
+                        B(3,1:nd:end) = dR(:,2);
+                        B(3,2:nd:end) = dR(:,1);
+                    elseif nd == 3
+                        B(4,2:nd:end) = dR(:,3);
+                        B(4,3:nd:end) = dR(:,2);
+                        B(5,1:nd:end) = dR(:,3);
+                        B(5,3:nd:end) = dR(:,1);
+                        B(6,1:nd:end) = dR(:,2);
+                        B(6,2:nd:end) = dR(:,1);
                     else
                         error('Could not build stress-strain matrix: obj.dimension should be 2 or 3');
+                    end                   
+                    strain = B*d(lm(:,e));
+                    stress = C*strain;
+                    for dd=1:sd
+                        F_e(dd,:) = F_e(dd,:) +Jmod*stress(dd)*R';
                     end
-                    C = obj.D;
-                    strain = B*d_solution(lm(:,e))*J;
-                    stress(e,n,:) = C*strain;
-                    for dd=1:length(C)
-                        Fs_e(dd,:) = Fs_e(dd,:) +qw(n)*R'*stress(e,n,dd);
-                    end
-                    N = kron(R',eye(length(C)));
-                    M_e = M_e +J*qw(n)*N'*N;
                end
-               idx = lm2(:,e)';
-               M(idx,idx) = M(idx,idx) +M_e;
-               F(idx) = F(idx) +Fs_e(:);
+               idx = lm(:,e)';
+               F(idx) = F(idx) +F_e(:);
            end
-        sd = M\F;
+           stress_d = M\F;
+           asb = obj;
+           solution = Solution(asb,stress_d);
+        end
         
-    end
+   
     end
 end
