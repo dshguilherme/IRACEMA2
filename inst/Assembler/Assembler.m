@@ -99,51 +99,116 @@ classdef Assembler
             
         end
         
+        function [qpoints, qweights] = boundary_quad_rule(obj)
+            qpoints = cell(obj.domain.rank*2,1);
+            qweights = qpoints;
+            
+            for i=1:obj.domain.rank
+                [qp, qw] = gaussian_quadrature(2*obj.domain.p(i) +1);
+                qpcell{i,1} = qp;
+                qpcell{i,2} = qw;
+            end
+            
+            switch obj.domain.rank
+                case 1
+                    error("For boundaries of 1D geometries, use a Dirichlet Boundary Condition");
+                
+                case 2
+                    qpoints = cell(4,1);
+                    qweights = cell(4,1);
+                    qu = qpcell{1,1};
+                    wu = qpcell{1,2};
+                    qv = qpcell{2,1};
+                    wv = qpcell{2,2};
+                    
+                    b1 = zeros(size(qu));
+                    b2 = ones(size(qu));
+                    qpoints{3} = [qu, b1];                   
+                    qweights{3} = wu;
+                    qpoints{4} = [qu, b2];
+                    qweights{4} = wu;
+                    
+                    
+                    b1 = zeros(size(qv));
+                    b2 = ones(size(qv));
+                    qpoints{1} = [b1, qv];
+                    qweights{1} = wv;
+                    qpoints{2} = [b2, qv];
+                    qweights{2} = wv;
+                
+                case 3                   
+                    qpoints = cell(6,1);
+                    qweights = cell(6,1);
+                    qu = qpcell{1,1};
+                    wu = qpcell{1,2};
+                    qv = qpcell{2,1};
+                    wv = qpcell{2,2};
+                    qw = qpcell{3,1};
+                    ww = qpcell{3,2};
+                    
+                    nquad = length(qv)*length(qw);
+                    tmp1 = zeros(nquad,3);
+                    tmp2 = tmp1;
+                    tmp3 = zeros(nquad,1);
+                    for n=1:n_quad
+                        [i,j] = ind2sub([length(qv),length(qw)],n);
+                        tmp1(n,:) = [0 qv(i) qw(j)];
+                        tmp2(n,:) = [1 qv(i) qw(j)];
+                        tmp3(n) = wv(i)*ww(j);
+                    end
+                    qpoints{1} = tmp1;
+                    qpoints{2} = tmp2;
+                    qweights{1} = tmp3;
+                    qweights{2} = tmp3;
+                    
+                    nquad = length(qu)*length(qw);
+                    tmp1 = zeros(nquad,3);
+                    tmp2 = tmp1;
+                    tmp3 = zeros(nquad,1);
+                    for n=1:n_quad
+                        [i,j] = ind2sub([length(qu),length(qw)],n);
+                        tmp1(n,:) = [qu(i) 0 qw(j)];
+                        tmp2(n,:) = [qu(i) 1 qw(j)];
+                        tmp3(n) = wu(i)*ww(j);
+                    end
+                    qpoints{3} = tmp1;
+                    qpoints{4} = tmp2;
+                    qweights{3} = tmp3;
+                    qweights{4} = tmp3;
+                    
+                  nquad = length(qu)*length(qv);
+                    tmp1 = zeros(nquad,3);
+                    tmp2 = tmp1;
+                    tmp3 = zeros(nquad,1);
+                    for n=1:n_quad
+                        [i,j] = ind2sub([length(qu),length(qv)],n);
+                        tmp1(n,:) = [qu(i) qv(j) 0];
+                        tmp2(n,:) = [qu(i) qv(j) 1];
+                        tmp3(n) = wu(i)*wv(j);
+                    end
+                    qpoints{5} = tmp1;
+                    qpoints{6} = tmp2;
+                    qweights{5} = tmp3;
+                    qweights{6} = tmp3;     
+            end
+        end
+                    
+            
         function id = id_matrix(obj)
             [global_basis_index, element_local_mapping, element_ranges] = ...
                 GetConnectivityArrays(obj.domain);
             d = obj.dimensions;
             [id, ~] = BuildGlobalLocalMatrices(element_local_mapping, d);            
         end
-        
-        function F = variable_force(obj, fun)
-            d = obj.dimensions;
+        function lm = location_matrix(obj)
             [global_basis_index, element_local_mapping, element_ranges] = ...
                 GetConnectivityArrays(obj.domain);
+            d = obj.dimensions;
             [~, lm] = BuildGlobalLocalMatrices(element_local_mapping, d);
-            
-            [qp, qw] = obj.quad_rule;
-            n_quad = length(qw);
-            
-            ndof = max(max(element_local_mapping))*d;
-            [nel_dof, nel] = size(element_local_mapping);
-            
-            F = zeros(ndof*d,1);
-           for e=1:nel
-                F_e = zeros(d,nel_dof);
-                for n=1:n_quad
-                    q = qp(n,:);
-                    for qq = 1:obj.domain.rank
-                        uu = element_ranges(e,:,qq);
-                        u(qq) = 0.5*((uu(2)-uu(1))*q(qq) +sum(uu));
-                    end
-                    x = obj.domain.eval_point(u);
-                    [R, ~, J] = FastShape(obj.domain, q, global_basis_index, ...
-                        element_local_mapping, element_ranges, e);
-                    Jmod = abs(J*qw(n));
-                    for dd=1:d
-                        F_e(d,:) = F_e(d,:) +Jmod*fun(x)*(R');
-                    end
-                end
-                idx = lm(:,e)';
-                F(idx) = F(idx) +F_e(:);
-            end
-            F = sparse(F);
         end
         
-        function F = constant_force(obj, f)
+        function F = force_vector(obj, fun)
             d = obj.dimensions;
-            assert(length(f) == d,"ERROR: Force should have the same number of dimensions than the solution");
             [global_basis_index, element_local_mapping, element_ranges] = ...
                 GetConnectivityArrays(obj.domain);
             [~, lm] = BuildGlobalLocalMatrices(element_local_mapping, d);
@@ -159,17 +224,128 @@ classdef Assembler
                 F_e = zeros(d,nel_dof);
                 for n=1:n_quad
                     q = qp(n,:);
+                    for qq = 1:obj.domain.rank
+                        uu = element_ranges(e,:,qq);
+                        u(qq) = 0.5*((uu(2)-uu(1))*q(qq) +sum(uu));
+                    end
+                    x = obj.domain.eval_point(u);
                     [R, ~, J] = FastShape(obj.domain, q, global_basis_index, ...
                         element_local_mapping, element_ranges, e);
                     Jmod = abs(J*qw(n));
+                    f = fun(x);
                     for dd=1:d
-                        F_e(d,:) = F_e(d,:) +Jmod*f(d)*(R');
+                        F_e(d,:) = F_e(d,:) +Jmod*f(dd)*(R');
                     end
                 end
                 idx = lm(:,e)';
                 F(idx) = F(idx) +F_e(:);
             end
             F = sparse(F);
+        end
+ 
+        function F = neumann_bc(obj,h,boundaries)
+             d = obj.dimensions;
+            [qp, qw] = obj.quad_rule;
+            gbi = obj.domain.global_basis_index;
+            [elm e_range] = obj.domain.element_local_mapping;
+            id = obj.id_matrix;
+            lm = obj.location_matrix;
+            
+            ndof = max(max(elm))*d;
+            [nel_dof, nel] = size(elm);
+            F = zeros(ndof,1);
+            
+            [nb, ~, ~] = size(boundaries);
+            [qp qw] = obj.boundary_quad_rule;
+            
+            for b=1:nb
+                elements = boundaries{b,2};
+                bside = boundaries{b,3};
+                uside = ceil(bside/2);
+                qq = qp{bside};
+                ww = qw{bside};
+                nquad = length(ww);
+                for ee=1:numel(elements)
+                    e = elements(ee);
+                    F_e = zeros(nel_dof,d);
+                    for n=1:nquad
+                        q = qq(n,:);
+                        [R, ~, J] = FastShape(obj.domain, q, gbi, elm, ...
+                                                               e_range, e);
+                        Jmod = abs(J*ww(n));
+                        while isnan(Jmod) || Jmod > 1e5
+                            q(uside) = q(uside)+ ((-1)^bside)*1e-5;
+                           
+                            [R, ~, J] = FastShape(obj.domain, q, gbi, elm, ...
+                                                               e_range, e);
+                            Jmod = abs(J*ww(n));
+                        end
+                        
+                        for dd =1:obj.domain.rank
+                            uu = e_range(e,:,dd);
+                            u(dd) = 0.5*((uu(2)-uu(1))*q(dd) +sum(uu));
+                        end
+                        x = obj.domain.eval_point(u);
+                        f = h(x);
+                        for dd=1:d
+                            F_e(:,dd) = F_e(:,dd) +Jmod*f(dd)*R;
+                        end
+                    end
+                    idx = lm(:,e)';
+                    F(idx) = F(idx) +F_e(:);
+                end
+            end
+        end       
+        
+        function [K,F] = robin_bc(obj,r,beta,boundaries)
+            d = obj.dimensions;
+            [qp, qw] = obj.quad_rule;
+            gbi = obj.domain.global_basis_index;
+            [elm e_range] = obj.domain.element_local_mapping;
+            id = obj.id_matrix;
+            lm = obj.location_matrix;
+            
+            ndof = max(max(elm))*d;
+            [nel_dof, nel] = size(elm);
+            K = zeros(ndof);
+            F = zeros(ndof,1);
+            
+            [nb, ~, ~] = size(boundaries);
+            [qp qw] = obj.boundary_quad_rule;
+           for b=1:nb
+                elements = boundaries{b,2};
+                bside = boundaries{b,3};
+                uside = ceil(bside/2);
+                qq = qp{bside};
+                ww = qw{bside};
+                nquad = length(ww);
+                for ee=1:numel(elements)
+                    e = elements(ee);
+                    F_e = zeros(nel_dof,d);
+                    K_e = zeros(nel_dof);
+                    for n=1:nquad
+                        q = qq(n,:);
+                        [R, ~, J] = FastShape(obj.domain, q, gbi, elm, ...
+                                                               e_range, e);
+                        Jmod = abs(J*ww(n));
+                        while isnan(Jmod) || Jmod > 1e5
+                            q(uside) = q(uside)+ ((-1)^bside)*1e-5;
+                           
+                            [R, ~, J] = FastShape(obj.domain, q, gbi, elm, ...
+                                                               e_range, e);
+                            Jmod = abs(J*qw(n));
+                        end
+                        
+                        for dd=1:d
+                            F_e(:,dd) = F_e(:,dd) +Jmod*r(dd)*R;
+                        end
+                        K_e = K_e +Jmod*beta*(R*R');
+                    end
+                    idx = lm(:,e)';
+                    K(idx,idx) = K(idx,idx) +K_e; 
+                    F(idx) = F(idx) +F_e(:);
+                end
+            end            
         end
         
         function [d, F, solution] = dirichlet_linear_solve(obj,K,F,g,boundaries)
