@@ -121,17 +121,17 @@ classdef Assembler
                     qv = qpcell{2,1};
                     wv = qpcell{2,2};
                     
-                    b1 = zeros(size(qu));
+                    b1 = ones(size(qu));
                     b2 = ones(size(qu));
-                    qpoints{3} = [qu, b1];                   
+                    qpoints{3} = [qu, -b1];                   
                     qweights{3} = wu;
                     qpoints{4} = [qu, b2];
                     qweights{4} = wu;
                     
                     
-                    b1 = zeros(size(qv));
+                    b1 = ones(size(qv));
                     b2 = ones(size(qv));
-                    qpoints{1} = [b1, qv];
+                    qpoints{1} = [-b1, qv];
                     qweights{1} = wv;
                     qpoints{2} = [b2, qv];
                     qweights{2} = wv;
@@ -152,7 +152,7 @@ classdef Assembler
                     tmp3 = zeros(nquad,1);
                     for n=1:n_quad
                         [i,j] = ind2sub([length(qv),length(qw)],n);
-                        tmp1(n,:) = [0 qv(i) qw(j)];
+                        tmp1(n,:) = [-1 qv(i) qw(j)];
                         tmp2(n,:) = [1 qv(i) qw(j)];
                         tmp3(n) = wv(i)*ww(j);
                     end
@@ -167,7 +167,7 @@ classdef Assembler
                     tmp3 = zeros(nquad,1);
                     for n=1:n_quad
                         [i,j] = ind2sub([length(qu),length(qw)],n);
-                        tmp1(n,:) = [qu(i) 0 qw(j)];
+                        tmp1(n,:) = [qu(i) -1 qw(j)];
                         tmp2(n,:) = [qu(i) 1 qw(j)];
                         tmp3(n) = wu(i)*ww(j);
                     end
@@ -182,7 +182,7 @@ classdef Assembler
                     tmp3 = zeros(nquad,1);
                     for n=1:n_quad
                         [i,j] = ind2sub([length(qu),length(qv)],n);
-                        tmp1(n,:) = [qu(i) qv(j) 0];
+                        tmp1(n,:) = [qu(i) qv(j) -1];
                         tmp2(n,:) = [qu(i) qv(j) 1];
                         tmp3(n) = wu(i)*wv(j);
                     end
@@ -244,7 +244,7 @@ classdef Assembler
         end
  
         function F = neumann_bc(obj,h,boundaries)
-             d = obj.dimensions;
+            d = obj.dimensions;
             [qp, qw] = obj.quad_rule;
             gbi = obj.domain.global_basis_index;
             [elm e_range] = obj.domain.element_local_mapping;

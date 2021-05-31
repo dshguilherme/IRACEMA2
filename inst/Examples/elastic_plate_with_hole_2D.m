@@ -22,9 +22,9 @@ domain = bs_ruled_surface(line,arc);
 % Refinement
 Xi = linspace(0,1,36);
 Xi = Xi(2:end-1);
-% domain.uniform_k_refine(Xi,2);
-domain.knot_refine(Xi,1)
-domain.knot_refine(Xi,2)
+domain.uniform_k_refine(Xi,2);
+% domain.knot_refine(Xi,1)
+% domain.knot_refine(Xi,2)
 
 E = 1e5;
 vu = 0.3;
@@ -42,7 +42,9 @@ stress_bc = boundaries(3,:);
 id = asb.id_matrix;
 [s1 s1] = size(K);
 F = zeros(s1,1);
-h = @(x) [-1 1];
+Tx = 10;
+h = @(x) plate_stress(x,Tx);
+% h = @(x) [-Tx 0];
 F = asb.neumann_bc(h,stress_bc);
 % Dirichlet BCs
 
@@ -69,11 +71,13 @@ end
 
 g = 0;
 [d, F, solution] = asb.dirichlet_linear_solve(K,F,g,clamped_dofs);
+figure(1)
 solution.plot_solution(1)
-% [x, xx] = solution.eval_solution([0 1])
+[x, xx] = solution.eval_solution([0 1]);
 colormap(jet)
-[stress_d, s_sol] = asb.project_stress(d);
-s_sol.plot_solution(2);
+% figure(2)
+% [stress_d, s_sol] = asb.project_stress(d);
+% s_sol.plot_solution(1);
 
 
 

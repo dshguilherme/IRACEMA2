@@ -342,7 +342,7 @@ classdef Geometry < handle
                         pu = obj.p(1);
                         uU = unique(U);
                         elm = zeros(pu+1,numel(uU)-1);
-                        e_range = zeros((numel(uV)-1)*(numel(uU)-1),2);
+                        e_range = zeros((numel(uU)-1)*(numel(uU)-1),2);
                         for eu=1:numel(uU)-1                               
                             u = 0.5*(uU(eu) +uU(eu+1));
                             sup_u = FindSpanLinear(nu-1,pu,u,U);
@@ -375,8 +375,8 @@ classdef Geometry < handle
                                 [UU, VV] = ndgrid(sup_eu,sup_ev);
                                 basis = [UU(:), VV(:)];
                                 elm(:,e) = sub2ind(obj.n',basis(:,1),basis(:,2));                            e_range(eu,1) = uU(eu);
-                                e_range(e,1,:) = [uU(eu) uU(eu+1)];
-                                e_range(e,2,:) = [uV(ev) uV(ev+1)];
+                                e_range(e,:,1) = [uU(eu) uU(eu+1)];
+                                e_range(e,:,2) = [uV(ev) uV(ev+1)];
                                 e = e+1;
                             end
                         end

@@ -21,7 +21,7 @@ su = FindSpanLinear(length(U)-pu-2,pu,u,U);
 sv = FindSpanLinear(length(V)-pv-2,pv,v,V);
 
 P = GeometryObject.points;
-ind = sub2ind(size(P),support(:,1),support(:,2));
+ind = element_local_mapping(:,element);
 ActivePoints = P(ind);
 ActivePoints = cell2mat(ActivePoints);
 Weights = ActivePoints(:,4);
@@ -59,11 +59,8 @@ dvdx = dUdX(:,2)';
 dR = dRdu*dudx +dRdv*dvdx;
 
 tmp = element_ranges(element,2,:) - element_ranges(element,1,:);
-tmp = [squeeze(tmp); 0];
-dQdU = eye(3);
-dQdU(1,1) = tmp(1);
-dQdU(2,2) = tmp(2);
-dQdU(3,3) = tmp(3);
+tmp = squeeze(tmp);
+dQdU = 0.5*diag(tmp);
 
 % Jacobian = [dXdU(1,1)*dQdU(1,1) + dXdU(1,2)*dQdU(2,1), ...
 %             dXdU(1,1)*dQdU(1,2) + dXdU(1,2)*dQdU(2,2);
@@ -73,7 +70,7 @@ dQdU(3,3) = tmp(3);
 %             dXdU(3,1)*dQdU(1,2) + dXdU(3,2)*dQdU(2,2)     
 %             ];
 Jacobian = dXdU(:,1)*dQdU(1,:) + dXdU(:,2)*dQdU(2,:);
-Jacobian = Jacobian(1:3,1:2);
-Jmod = det(Jacobian(1:2,1:2));
+Jacobian = Jacobian'*Jacobian;
+Jmod = sqrt(det(Jacobian));
 
 end
