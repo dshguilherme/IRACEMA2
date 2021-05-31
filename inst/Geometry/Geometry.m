@@ -342,7 +342,7 @@ classdef Geometry < handle
                         pu = obj.p(1);
                         uU = unique(U);
                         elm = zeros(pu+1,numel(uU)-1);
-                        e_range = zeros((numel(uV)-1)*(numel(uU)-1),2);
+                        e_range = zeros((numel(uU)-1)*(numel(uU)-1),2);
                         for eu=1:numel(uU)-1                               
                             u = 0.5*(uU(eu) +uU(eu+1));
                             sup_u = FindSpanLinear(nu-1,pu,u,U);

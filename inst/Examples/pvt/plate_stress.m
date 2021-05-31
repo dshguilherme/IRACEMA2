@@ -13,8 +13,5 @@ s_xy = ((c^2 -s^2)*s_rt +c*s*(s_rr -s_tt))/(c^2 -2*c*c*s*s +s^4 -4*c*s);
 s_yy = 0.5*(s_rr +s_tt -((c*c -s*s)*(s_xy - s_rt)/(c*s)));
 s_xx = s_rr +s_tt -s_yy;
 
-
-s = [s_xx s_yy s_xy];
-
-
+s = [s_xx s_yy s_yy];
 end

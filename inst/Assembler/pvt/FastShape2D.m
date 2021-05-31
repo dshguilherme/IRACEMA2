@@ -59,8 +59,8 @@ dvdx = dUdX(:,2)';
 dR = dRdu*dudx +dRdv*dvdx;
 
 tmp = element_ranges(element,2,:) - element_ranges(element,1,:);
-tmp = [squeeze(tmp); 0];
-dQdU = diag(tmp);
+tmp = squeeze(tmp);
+dQdU = 0.5*diag(tmp);
 
 % Jacobian = [dXdU(1,1)*dQdU(1,1) + dXdU(1,2)*dQdU(2,1), ...
 %             dXdU(1,1)*dQdU(1,2) + dXdU(1,2)*dQdU(2,2);
@@ -70,7 +70,7 @@ dQdU = diag(tmp);
 %             dXdU(3,1)*dQdU(1,2) + dXdU(3,2)*dQdU(2,2)     
 %             ];
 Jacobian = dXdU(:,1)*dQdU(1,:) + dXdU(:,2)*dQdU(2,:);
-Jacobian = Jacobian(1:3,1:2);
-Jmod = det(Jacobian(1:2,1:2));
+Jacobian = Jacobian'*Jacobian;
+Jmod = sqrt(det(Jacobian));
 
 end

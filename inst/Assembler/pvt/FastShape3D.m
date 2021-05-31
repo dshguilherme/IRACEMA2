@@ -71,7 +71,7 @@ dR = dRdu*dudx +dRdv*dvdx +dRdw*dwdx;
 
 tmp = element_ranges(element,2,:) - element_ranges(element,1,:);
 tmp = squeeze(tmp);
-dQdU = diag(tmp);
+dQdU = 0.5*diag(tmp);
 Jacobian = dXdU(:,1)*dQdU(1,:) + dXdU(:,2)*dQdU(2,:) +dXdU(:,3)*dQdU(3,:);
 Jmod = det(Jacobian);
 end
