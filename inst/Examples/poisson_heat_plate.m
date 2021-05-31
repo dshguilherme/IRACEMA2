@@ -33,22 +33,24 @@ domain.knot_refine(Xi,2);
 % Assembly
 asb = Poisson(alpha,"gauss",1,domain);
 K = asb.build_stiffness;
-F = zeros(length(K),1);
-F = sparse(F);
 % Boundary conditions
 boundaries = domain.extract_boundaries;
 
 b_robin1 = boundaries(2,:);
 b_robin2 = boundaries(4,:);
 b_robin = [b_robin1; b_robin2];
-r = h*T_inf/alpha;
-beta = h/alpha;
+r = h*T_inf;
+beta = h;
 
-[K,F] = asb.robin_bc(K,F,r,beta,b_robin);
-
+[Kr,F] = asb.robin_bc(r,beta,b_robin);
+K = K+Kr;
 
 % Dirichlet and Solution
-b_dirichlet = cell2mat(boundaries(3,2));
+id = asb.id_matrix;
+P = domain.points;
+P = cell2mat(P(:));
+b_points = find(P(:,2) == 0);
+b_dirichlet = id(b_points);
 g = T_d;
 
 [d, ~, solution] = asb.dirichlet_linear_solve(K,F,g,b_dirichlet);

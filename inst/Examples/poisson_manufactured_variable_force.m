@@ -23,8 +23,8 @@ for idx =1:10
     % Refinement
     Xi = linspace(0,1,refinements(idx));
     Xi = Xi(2:end-1);
-    domain.degree_elevate(1,1);
-    domain.degree_elevate(1,2);
+%     domain.degree_elevate(1,1);
+%     domain.degree_elevate(1,2);
     domain.knot_refine(Xi,1);
     domain.knot_refine(Xi,2);
     
@@ -32,7 +32,7 @@ for idx =1:10
     asb = Poisson(1,"gauss",1,domain);
     K = asb.build_stiffness;
     f = @(x) 6*x(2)^2 -18*x(1);
-    F = asb.variable_force(f);
+    F = asb.force_vector(f);
 
     % Boundary Conditions
     boundaries = domain.extract_boundaries;

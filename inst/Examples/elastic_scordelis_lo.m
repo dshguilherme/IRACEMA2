@@ -5,7 +5,7 @@ close all
 
 E = 4.32e8;
 vu = 0.33;
-g = [0 0 -90];
+g = @(x) [0 0 -90];
 R = 25;
 L = 50;
 phi = 40*pi/180;
@@ -21,8 +21,8 @@ section = bs_ruled_surface(arc1,arc2);
 domain = bs_extrusion(section,[0 L/2 0]);
 
 % Refinement
-domain.degree_elevate(3,1);
-domain.degree_elevate(3,2);
+domain.degree_elevate(1,1);
+domain.degree_elevate(1,2);
 domain.degree_elevate(1,3);
 Xi = linspace(0,1,16);
 Xi = Xi(2:end-1);
@@ -33,26 +33,23 @@ domain.knot_refine(0.5,3);
 % Assembly
 asb = Elastic(E,vu,"gauss",3,domain);
 K = asb.build_stiffness;
-F = asb.constant_force(g);
+F = asb.force_vector(g);
 
 % Boundary Conditions
 id = asb.id_matrix;
-boundaries = domain.extract_boundaries;
 
-rigid_d = boundaries(5,:);
-rigid_points = rigid_d{2};
-rigid_dofs = id([1 3],rigid_points);
+P = domain.points;
+P = cell2mat(P(:));
 
-sym_plane1 = boundaries(1,:);
-x_points = sym_plane1{2};
-x_dofs = id(1,x_points);
+x_points = find(P(:,1) == 0);
+x_dofs = id(x_points,1);
 
-sym_plane2 = boundaries(6,:);
-y_points = sym_plane2{2};
-y_dofs = id(2,y_points);
+xz_points = find(P(:,2) == 0);
+xz_dofs = id(xz_points,[1 3]);
 
-clamped_dofs = unique([rigid_dofs(:); x_dofs(:); y_dofs(:)]);
-bc = zeros(numel(clamped_dofs),1);
-[d, F, solution] = asb.dirichlet_linear_solve(K,F,bc,clamped_dofs);
+clamped_dofs = unique([x_dofs(:); xz_dofs(:)]);
+
+g = 0;
+[d, F, solution] = asb.dirichlet_linear_solve(K,F,g,clamped_dofs);
 solution.plot_solution(3)
 colormap("hot");
