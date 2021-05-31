@@ -375,8 +375,8 @@ classdef Geometry < handle
                                 [UU, VV] = ndgrid(sup_eu,sup_ev);
                                 basis = [UU(:), VV(:)];
                                 elm(:,e) = sub2ind(obj.n',basis(:,1),basis(:,2));                            e_range(eu,1) = uU(eu);
-                                e_range(e,1,:) = [uU(eu) uU(eu+1)];
-                                e_range(e,2,:) = [uV(ev) uV(ev+1)];
+                                e_range(e,:,1) = [uU(eu) uU(eu+1)];
+                                e_range(e,:,2) = [uV(ev) uV(ev+1)];
                                 e = e+1;
                             end
                         end

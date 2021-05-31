@@ -39,7 +39,7 @@ boundaries = domain.extract_boundaries;
 b_robin1 = boundaries(2,:);
 b_robin2 = boundaries(4,:);
 b_robin = [b_robin1; b_robin2];
-r = h*T_inf;
+r = +h*T_inf;
 beta = h;
 
 [Kr,F] = asb.robin_bc(r,beta,b_robin);

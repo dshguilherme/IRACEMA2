@@ -70,12 +70,8 @@ dwdx = dUdX(:,3)';
 dR = dRdu*dudx +dRdv*dvdx +dRdw*dwdx;
 
 tmp = element_ranges(element,2,:) - element_ranges(element,1,:);
-tmp = [squeeze(tmp); 0];
-dQdU = eye(3);
-dQdU(1,1) = tmp(1);
-dQdU(2,2) = tmp(2);
-dQdU(3,3) = tmp(3);
-
+tmp = squeeze(tmp);
+dQdU = diag(tmp);
 Jacobian = dXdU(:,1)*dQdU(1,:) + dXdU(:,2)*dQdU(2,:) +dXdU(:,3)*dQdU(3,:);
 Jmod = det(Jacobian);
 end
