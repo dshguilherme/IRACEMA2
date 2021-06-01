@@ -124,7 +124,84 @@ classdef Geometry < handle
            
             end
         end
-        
+        function R = eval_basis(obj,parametric_coordinate_array)
+           assert(obj.rank == numel(parametric_coordinate_array),"Error: invalid number of parameters.")
+                        
+            switch obj.rank
+                case 1
+                    u = parametric_coordinate_array(1);
+                    nu = obj.n(1);
+                    pu = obj.p(1);
+                    U = obj.knots{1};
+                    
+                    su = FindSpanLinear(nu-1,pu,u,U);
+                    P = obj.points;
+                    P = P(:);
+                    P = cell2mat(P(su-pu+1:su+1));
+                    weights = P(:,4);
+                    P = P(:,1:3);
+                    B = DersBasisFun(su,u,pu,0,U);
+                    Q = B*weights;
+                    R = B'.*weights/Q;
+                case 2
+                             
+                    u = parametric_coordinate_array(1);
+                    nu = obj.n(1);
+                    pu = obj.p(1);
+                    U = obj.knots{1}; 
+                    su = FindSpanLinear(nu-1,pu,u,U); %Book
+                    
+                    v = parametric_coordinate_array(2);
+                    nv = obj.n(2);
+                    pv = obj.p(2);
+                    V = obj.knots{2};
+                    sv = FindSpanLinear(nv-1,pv,v,V);
+                    
+                    P = obj.points;
+                    P = P(su-pu+1:su+1,sv-pv+1:sv+1);
+                    P = cell2mat(P(:));
+                    weights = P(:,4);
+                    P = P(:,1:3);
+                    N = DersBasisFun(su,u,pu,0,U);
+                    M = DersBasisFun(sv,v,pv,0,V);
+                    B = kron(M,N);
+                    Q = B*weights;
+                    R = B'.*weights/Q;
+                case 3
+                    u = parametric_coordinate_array(1);
+                    nu = obj.n(1);
+                    pu = obj.p(1);
+                    U = obj.knots{1}; 
+                    su = FindSpanLinear(nu-1,pu,u,U);
+                    
+                    v = parametric_coordinate_array(2);
+                    nv = obj.n(2);
+                    pv = obj.p(2);
+                    V = obj.knots{2};
+                    sv = FindSpanLinear(nv-1,pv,v,V);
+                    
+                    w = parametric_coordinate_array(3);
+                    nw = obj.n(3);
+                    pw = obj.p(3);
+                    W = obj.knots{3}; 
+                    sw = FindSpanLinear(nw-1,pw,w,W);
+                                        
+                    P = obj.points;
+                    P = P(su-pu+1:su+1,sv-pv+1:sv+1,sw-pw+1:sw+1);
+                    P = cell2mat(P(:));
+                    weights = P(:,4);
+                    P = P(:,1:3);
+                    N = DersBasisFun(su,u,pu,0,U);
+                    M = DersBasisFun(sv,v,pv,0,V);
+                    L = DersBasisFun(sw,w,pw,0,W);
+                    B = kron(kron(L,M),N);
+                    
+                    Q = B*weights;
+                    R = B'.*weights/Q;
+            end
+            R = R';
+             
+        end
         function reverse_eval(obj, physical_coordinate_array)
             error('In development');
 %           Step 1. Is point(x,y,z) inside Convex Hull?
@@ -374,7 +451,7 @@ classdef Geometry < handle
                                 sup_ev = sup_v-pv+1:sup_v+1;
                                 [UU, VV] = ndgrid(sup_eu,sup_ev);
                                 basis = [UU(:), VV(:)];
-                                elm(:,e) = sub2ind(obj.n',basis(:,1),basis(:,2));                            e_range(eu,1) = uU(eu);
+                                elm(:,e) = sub2ind(obj.n',basis(:,1),basis(:,2));                            
                                 e_range(e,:,1) = [uU(eu) uU(eu+1)];
                                 e_range(e,:,2) = [uV(ev) uV(ev+1)];
                                 e = e+1;
@@ -609,7 +686,8 @@ classdef Geometry < handle
                     end
             end
         end
-                        
+        
+                       
         
     end
     
