@@ -118,13 +118,14 @@ classdef Solution < Geometry
         function solution_cell = extract_solution_boundaries(obj)
             assert(obj.domain.rank == 3, "This function is only usable for rank 3 solutions");
             b = obj.domain.extract_boundaries;
-            dof = b(:,2);
+            pts = b(:,4);
             b = b(:,1);
-            d = size(obj.id,1);
+            dd = size(obj.id,2);
             solution_cell = cell(numel(b),1);
             for i=1:numel(b)
-                asb = Assembler("gauss",d,b{i});
-                dofs = obj.id(:,dof{i});
+                asb = Assembler("gauss",dd,b{i});
+                dofs = obj.id(pts{i},:);
+                dofs = dofs(:);
                 s = obj.d(dofs);
                 solution_cell{i} = Solution(asb,s);
             end
