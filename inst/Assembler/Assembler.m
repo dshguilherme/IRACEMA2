@@ -360,6 +360,22 @@ classdef Assembler
             solution.asb = asb;
         end
         
+        function [d, F, solution] = dirichlet_weak_solve(obj,K,F,g,boundaries)
+            dd = obj.dimensions;
+            domain = obj.domain;
+            gbi = domain.global_basis_index;
+            [elm, e_ranges] = domain.element_local_mapping;
+            id = asb.id_matrix;
+            lm = asb.location_matrix;
+            
+            [qp, qw] = obj.quad_rule;
+            n_quad = length(qw);
+            ndof = max(max(element_local_mapping))*d;
+            [nel_dof, nel] = size(element_local_mapping);
+            
+            F = zeros
+        end
+        
         function M = L2_projector(obj,nd)
            d = nd;
            [global_basis_index, element_local_mapping, element_ranges] = ...

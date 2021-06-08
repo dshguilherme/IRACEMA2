@@ -135,7 +135,7 @@ classdef Geometry < handle
         
         function boundaries = extract_boundaries(obj)
             r = obj.rank;
-            boundaries = cell(r*2,3);
+            boundaries = cell(r*2,4);
             elm = obj.element_local_mapping;
             elements = 1:size(elm,2);
             switch r
@@ -170,6 +170,8 @@ classdef Geometry < handle
                     
                     boundaries{1,2} = b1_elements;
                     boundaries{2,2} = b2_elements;
+                    boundaries{1,4} = b1_points;
+                    boundaries{2,4} = b2_points;
                     
                     P3 = P(:,1);
                     P3 = P3(:);
@@ -189,6 +191,8 @@ classdef Geometry < handle
                     
                     boundaries{3,2} = b3_elements;
                     boundaries{4,2} = b4_elements;
+                    boundaries{3,4} = b3_points;
+                    boundaries{4,4} = b3_points;
                    clear b1_idx b2_idx                        
                 case 3
                     n = obj.n;
@@ -223,7 +227,9 @@ classdef Geometry < handle
                     b1_elements = elements(any(ismember(elm,b1_points,"legacy")))';
                     b2_elements = elements(any(ismember(elm,b2_points,"legacy")))';
                     boundaries{1,2} = b1_elements;
+                    boundaries{1,4} = b1_points;
                     boundaries{2,2} = b2_elements;
+                    boundaries{2,4} = b2_points;
 
                     
                     P3 = reshape(P(:,1,:),[n(1),n(3)]);
@@ -240,7 +246,9 @@ classdef Geometry < handle
                     b1_elements = elements(any(ismember(elm,b1_points,"legacy")))';
                     b2_elements = elements(any(ismember(elm,b2_points,"legacy")))';
                     boundaries{3,2} = b1_elements;
-                    boundaries{4,2} = b2_elements;   
+                    boundaries{3,4} = b1_points;
+                    boundaries{4,2} = b2_elements;
+                    boundaries{4,4} = b2_points;
 
                     P5 = reshape(P(:,:,1),[n(1),n(2)]);
                     P6 = reshape(P(:,:,end),[n(1),n(2)]);
@@ -255,7 +263,9 @@ classdef Geometry < handle
                     b1_elements = elements(any(ismember(elm,b1_points,"legacy")))';
                     b2_elements = elements(any(ismember(elm,b2_points,"legacy")))';
                     boundaries{5,2} = b1_elements;
-                    boundaries{6,2} = b2_elements;      
+                    boundaries{5,4} = b1_points;
+                    boundaries{6,2} = b2_elements;
+                    boundaries{6,4} = b2_points;
                     clear b1_idx b2_idx
             end
             for i=1:length(boundaries)
