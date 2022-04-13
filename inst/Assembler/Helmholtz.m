@@ -131,10 +131,29 @@ classdef Helmholtz < Poisson
                     vecs = [vecs(1:dofs(i)-1,:); padding; vecs(dofs(i):end,:)];
                 end
             end
+            vecs = vecs./(max(abs(vecs)));
+            for i=1:size(vecs,2)
+                if sum(sign(vecs(:,i))) < 0
+                    vecs(:,i) = -vecs(:,i);
+                end
+            end
             solution_cell = cell(n_modes,1);
             for i=1:n_modes
                 solution_cell{i} = Solution(obj, vecs(:,i));
             end
+        end
+        
+        function [d, F, solution] = helmholtz_linear_solve(obj,K,M,F,w,g,boundaries)
+            boundaries = boundaries(:);
+            d = zeros(size(F));
+            free_dofs = setdiff(1:length(d),boundaries);
+            d(boundaries) = g(:);
+            F(free_dofs) = F(free_dofs) - K(free_dofs,boundaries)*d(boundaries);
+            d(free_dofs) = (K(free_dofs,free_dofs)  ...
+                               -(w^2)*M(free_dofs,free_dofs))\F(free_dofs);
+            asb = obj;
+            solution = Solution(asb, d);
+            solution.asb = asb;
         end
         
     end

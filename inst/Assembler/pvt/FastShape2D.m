@@ -56,7 +56,7 @@ dUdX = pinv(dXdU);
 dudx = dUdX(:,1)';
 dvdx = dUdX(:,2)';
 
-dR = dRdu*dudx +dRdv*dvdx;
+dR = dRdu*dUdX(1,:) +dRdv*dUdX(2,:);
 
 tmp = element_ranges(element,2,:) - element_ranges(element,1,:);
 tmp = squeeze(tmp);

@@ -242,7 +242,73 @@ classdef Assembler
             end
             F = sparse(F);
         end
- 
+        
+        function [K, F] = weak_dirichlet(obj,g,boundaries,C,gamma)
+            %  WARNING: ONLY WORKING FOR 2D OBJECTS ON XY PLANE
+            d = obj.dimensions;
+            gbi = obj.domain.global_basis_index;
+            [elm e_range] = obj.domain.element_local_mapping;
+            id = obj.id_matrix;
+            lm = obj.location_matrix;
+            
+            ndof = max(max(elm))*d;
+            [nel_dof, nel] = size(elm);
+            K = zeros(ndof);
+            F = zeros(ndof,1);
+            
+            [nb, ~, ~] = size(boundaries);
+            [qp qw] = obj.boundary_quad_rule;
+            
+            for b=1:nb
+                elements = boundaries{b,2};
+                bside = boundaries{b,3};
+                uside = ceil(bside/2);
+                qq = qp{bside};
+                ww = qw{bside};
+                nquad = length(ww);
+                for ee=1:numel(elements)
+                    e = elements(ee);
+                    K_e = zeros(nel_dof);
+                    F_e = zeros(nel_dof,d);
+                    for n=1:nquad
+                        q = qq(n,:);
+                        [R, dR, J] = FastShape(obj.domain, q, gbi, elm, ...
+                                                               e_range, e);
+                        Jmod = abs(J*ww(n));
+                        while isnan(Jmod) || Jmod > 1e5
+                            q(uside) = q(uside)+ ((-1)^bside)*1e-5;
+                           
+                            [R, dR, J] = FastShape(obj.domain, q, gbi, ...
+                                                          elm, e_range, e);
+                            Jmod = abs(J*ww(n));
+                        end
+                        for dd =1:obj.domain.rank
+                            uu = e_range(e,:,dd);
+                            u(dd) = 0.5*((uu(2)-uu(1))*q(dd) +sum(uu));
+                        end
+                        x = obj.domain.eval_point(u);
+                        f = g(x);
+                        n = x(1:2);
+                        n = n*[0 -1; 1 0];
+                        ndR = dR*n';
+                        N = kron(R',eye(d));
+                        K1 = Jmod*gamma*ndR*N;
+                        K2 = Jmod*C*(N'*N);
+                        F1 = Jmod*gamma*ndR*f;
+                        F2 = Jmod*C*N'*f;
+                        for dd=1:d
+                            F_e(:,dd) = F_e(:,dd) +F1(:,dd) +F2(:,dd);
+                        end
+                        K_e = K_e +K1 +K2;
+                    end
+                    idx = lm(:,e)';
+                    K(idx,idx) = K(idx,idx) +K_e;
+                    F(idx) = F(idx) +F_e(:);
+                end
+            end
+        end
+        
+        
         function F = neumann_bc(obj,h,boundaries)
             d = obj.dimensions;
             [qp, qw] = obj.quad_rule;
@@ -347,7 +413,7 @@ classdef Assembler
                 end
             end            
         end
-        
+                
         function [d, F, solution] = dirichlet_linear_solve(obj,K,F,g,boundaries)
             boundaries = boundaries(:);
             d = zeros(size(F));
@@ -359,23 +425,7 @@ classdef Assembler
             solution = Solution(asb, d);
             solution.asb = asb;
         end
-        
-        function [d, F, solution] = dirichlet_weak_solve(obj,K,F,g,boundaries)
-            dd = obj.dimensions;
-            domain = obj.domain;
-            gbi = domain.global_basis_index;
-            [elm, e_ranges] = domain.element_local_mapping;
-            id = asb.id_matrix;
-            lm = asb.location_matrix;
-            
-            [qp, qw] = obj.quad_rule;
-            n_quad = length(qw);
-            ndof = max(max(element_local_mapping))*d;
-            [nel_dof, nel] = size(element_local_mapping);
-            
-            F = zeros
-        end
-        
+           
         function M = L2_projector(obj,nd)
            d = nd;
            [global_basis_index, element_local_mapping, element_ranges] = ...
@@ -421,22 +471,91 @@ classdef Assembler
            F = zeros(ndof,1);
            for e=1:nel
                F_e = zeros(d, nel_dof);
-               q = qp(n,:);
-               [R, ~, J] = FastShape(obj.domain, q, global_basis_index, ...
-                   element_local_mapping, element_ranges, e);
-               Jmod = abs(J*qw(n));
-               for qq = 1:obj.domain.rank
-                        uu = element_ranges(e,:,qq);
-                        u(qq) = 0.5*((uu(2)-uu(1))*q(qq) +sum(uu));
+               for n=1:n_quad
+                   q = qp(n,:);
+                   [R, ~, J] = FastShape(obj.domain, q, global_basis_index, ...
+                       element_local_mapping, element_ranges, e);
+                   Jmod = abs(J*qw(n));
+                   for qq = 1:obj.domain.rank
+                            uu = element_ranges(e,:,qq);
+                            u(qq) = 0.5*((uu(2)-uu(1))*q(qq) +sum(uu));
+                   end
+                   x = obj.domain.eval_point(u);
+                   f = fun(x);
+                   for dd=1:d
+                            F_e(d,:) = F_e(d,:) +Jmod*f(d)*(R');
+                   end
+                   idx = lm(:,e)';
+                   F(idx) = F(idx) +F_e(:);
                end
-               x = obj.domain.eval_point(u);
-               f = fun(x);
-               for dd=1:d
-                        F_e(d,:) = F_e(d,:) +Jmod*f(d)*(R');
+           end
+        end
+        
+        function F = project_grad(obj,fun)
+            d = 3;
+            [global_basis_index, element_local_mapping, element_ranges] = ...
+                GetConnectivityArrays(obj.domain);
+           [~, lm] = BuildGlobalLocalMatrices(element_local_mapping, d);
+            
+           [qp, qw] = obj.quad_rule;
+           n_quad = length(qw);
+            
+           ndof = max(max(element_local_mapping))*d;
+           [nel_dof, nel] = size(element_local_mapping);
+            
+           F = zeros(ndof,1);
+           for e=1:nel
+               F_e = zeros(d, nel_dof);
+               for n=1:n_quad
+                   q = qp(n,:);
+                   [R, dR, J] = FastShape(obj.domain, q, global_basis_index, ...
+                       element_local_mapping, element_ranges, e);
+                   Jmod = abs(J*qw(n));
+                   for qq = 1:obj.domain.rank
+                            uu = element_ranges(e,:,qq);
+                            u(qq) = 0.5*((uu(2)-uu(1))*q(qq) +sum(uu));
+                   end
+                   x = obj.domain.eval_point(u);
+                   f = fun(x);
+                   if size(dR,2) < 3
+                       ndim = setdiff([1 2 3], 1:1:size(dR,2));
+                       dR = [dR zeros(size(dR,1), numel(ndim))];
+                   end
+                   F_e = F_e +Jmod*eye(d)*f*dR';
+                   idx = lm(:,e)';
+                   F(idx) = F(idx) +F_e(:);
+               end
+           end
+        end
+        
+         function M = derivative_projector(obj,nd,xn)
+           d = nd;
+           [global_basis_index, element_local_mapping, element_ranges] = ...
+                GetConnectivityArrays(obj.domain);
+           [~, lm] = BuildGlobalLocalMatrices(element_local_mapping, d);
+            
+           [qp, qw] = obj.quad_rule;
+           n_quad = length(qw);
+            
+           ndof = max(max(element_local_mapping))*d;
+           [nel_dof, nel] = size(element_local_mapping);
+            
+           M = zeros(ndof);
+            
+           for e=1:nel
+               M_e = zeros(nel_dof*d);
+               for n=1:n_quad
+                   q = qp(n,:);
+                   [R, dR, J] = FastShape(obj.domain, q, global_basis_index, ...
+                       element_local_mapping, element_ranges, e);
+                   Jmod = abs(J*qw(n));
+                   N = kron(R',eye(d));
+                   M_e = M_e +Jmod*(N'*dR(:,xn)');
                end
                idx = lm(:,e)';
-               F(idx) = F(idx) +F_e(:);
+               M(idx,idx) = M(idx,idx) +M_e;
            end
+           M = sparse(M);
         end
         
         function up = plot_qpoints(obj)
