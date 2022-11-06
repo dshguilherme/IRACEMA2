@@ -156,6 +156,67 @@ classdef Helmholtz < Poisson
             solution.asb = asb;
         end
         
+        function [K,F] = lui_bc(obj,f,g,normal,boundaries)
+            d = obj.dimensions;
+            [qp, qw] = obj.quad_rule;
+            gbi = obj.domain.global_basis_index;
+            [elm e_range] = obj.domain.element_local_mapping;
+            id = obj.id_matrix;
+            lm = obj.location_matrix;
+            
+            ndof = max(max(elm))*d;
+            [nel_dof, nel] = size(elm);
+            F = zeros(ndof,1);
+            K = zeros(ndof);
+                        
+            [nb, ~, ~] = size(boundaries);
+            [qp qw] = obj.boundary_quad_rule;           
+            for b=1:nb
+                elements = boundaries{b,2};
+                bside = boundaries{b,3};
+                uside = ceil(bside/2);
+                qq = qp{bside};
+                ww = qw{bside};
+                nquad = length(ww);
+                for ee=1:numel(elements)
+                    e = elements(ee);
+                    F_e = zeros(nel_dof,d);
+                    K_e = zeros(nel_dof);
+                    for n=1:nquad
+                        q = qq(n,:);
+                        [R, dR, J] = FastShape(obj.domain, q, gbi, elm, ...
+                                                               e_range, e);
+                        Jmod = abs(J*ww(n));
+                        while isnan(Jmod) || Jmod > 1e5
+                            q(uside) = q(uside)+ ((-1)^bside)*1e-5;
+                           
+                            [R, ~, J] = FastShape(obj.domain, q, gbi, elm, ...
+                                                               e_range, e);
+                            Jmod = abs(J*ww(n));
+                        end
+                        
+                        for dd =1:obj.domain.rank
+                            uu = e_range(e,:,dd);
+                            u(dd) = 0.5*((uu(2)-uu(1))*q(dd) +sum(uu));
+                        end
+                        x = obj.domain.eval_point(u);
+                        tmp1 = g(x);
+                        tmp2 = f(x);
+                        r = dot(tmp2,normal) +tmp1;
+                        beta = 1;
+                        for dd=1:d
+                            F_e(:,dd) = F_e(:,dd) +Jmod*1e12*r(dd)*R;
+                        end
+                        N = kron(R',eye(d));
+                        K_e = K_e -Jmod*1e12*N'*N;
+                    end
+                    idx = lm(:,e)';
+                    F(idx) = F(idx) +F_e(:);
+                    K(idx,idx) = K(idx,idx) +K_e;
+                end
+            end          
+        end
+        
     end
         
 end

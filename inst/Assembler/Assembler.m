@@ -243,7 +243,7 @@ classdef Assembler
             F = sparse(F);
         end
         
-        function [K, F] = weak_dirichlet(obj,g,boundaries,C,gamma)
+        function [K, F] = weak_dirichlet(obj,g,boundaries,normal,C,gamma)
             %  WARNING: ONLY WORKING FOR 2D OBJECTS ON XY PLANE
             d = obj.dimensions;
             gbi = obj.domain.global_basis_index;
@@ -288,9 +288,7 @@ classdef Assembler
                         end
                         x = obj.domain.eval_point(u);
                         f = g(x);
-                        n = x(1:2);
-                        n = n*[0 -1; 1 0];
-                        ndR = dR*n';
+                        ndR = dR*normal';
                         N = kron(R',eye(d));
                         K1 = Jmod*gamma*ndR*N;
                         K2 = Jmod*C*(N'*N);

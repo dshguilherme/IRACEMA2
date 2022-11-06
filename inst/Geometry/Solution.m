@@ -331,7 +331,11 @@ classdef Solution < Geometry
                             c(i,j) = d(dim);
                         end
                     end
+                    if isreal(c)
                     h = surf(x,y,z,c);
+                    else
+                        h = surf(x,y,z,abs(c));
+                    end
                     colorbar;
                     set(h,'edgecolor','none','FaceLighting','phong');
                 
