@@ -28,7 +28,7 @@ classdef Elastodynamic < Elastic
            M = zeros(ndof);
             
            for e=1:nel
-               M_e = zeros(nel_dof);
+               M_e = zeros(nel_dof*d);
                for n=1:n_quad
                    q = qp(n,:);
                    [R, ~, J] = FastShape(obj.domain, q, global_basis_index, ...

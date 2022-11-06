@@ -26,7 +26,7 @@ clc
     omega = bs_ruled_surface(line5, line6);
     
 %% Refinement
-    Xi = linspace(0,1,15);
+    Xi = linspace(0,1,35);
     Xi = Xi(2:end-1);
     omega1.degree_elevate(1,1);
     omega2.degree_elevate(1,1);
@@ -38,7 +38,7 @@ clc
     omega2.knot_refine(Xi,2);
     
 % Coarser Omega
-    Xi = linspace(0,1,10);
+    Xi = linspace(0,1,35);
     Xi = Xi(2:end-1);
     omega.degree_elevate(1,1);
     omega.degree_elevate(1,2);
@@ -101,16 +101,23 @@ clc
     omega_inverse_mapping = @(x) [x(1)/L, x(2)/h];
    
 %% Schwarz Algorithm
-    C = 1e4;
+    C = 1e30;
     gamma = 1;
     boundaries1 = omega1.extract_boundaries;
     boundaries2 = omega2.extract_boundaries;
     solution2 = sol_2;
+%     for i=1:10
     % Step 1: Project the solution of Omega 2 at Omega 1
         g1 = @(x) solution2.eval_solution_value(omega2_inverse_mapping(x));
     % Step 2: Project the derivative of the Omega 2 solution at Omega 1
+        ff1 = @(x) solution2.eval_solution_derivative(omega2_inverse_mapping(x));
+        n = [1 0 0];
+%         f1 = @(x) dot(n,ff1(x));
     % Step 3: Build and solve the new problem
-        [KK1, FF1] = asb1.weak_dirichlet(g1, boundaries1(2,:), C,gamma);
+%         [KK1, FF1] = asb1.weak_dirichlet(g1, boundaries1(2,:), n, C,gamma);
+%         F1 = asb1.neumann_bc(f1,boundaries1(2,:));
+        [KK1, FF1] = asb1.lui_bc(ff1,g1,n,boundaries1(2,:));
+%         FF1 = F1+FF1;
         KK1 = K1+KK1;
         [d, FF1, solution1] = asb1.helmholtz_linear_solve(KK1,M1,FF1,w, ...
                                                           0, clamp_1_dofs);
@@ -119,10 +126,22 @@ clc
     % Step 4: Project the solution of Omega 1 i+1 at Omega 2 i
         g2 = @(x) solution1.eval_solution_value(omega1_inverse_mapping(x));
     % Step 5: Project the derivative of the Omega 1 i+1 solution at Omega 2
-        [KK2, FF2] = asb2.weak_dirichlet(g2, boundaries2(1,:), C, gamma);
+        ff2 = @(x) solution1.eval_solution_derivative(omega1_inverse_mapping(x));
+        n = [-1 0 0];
+%         f2 = @(x) dot(n,ff2(x));
+    % Step 6: Build and solve the new problem
+%         [KK2, FF2] = asb2.weak_dirichlet(g2, boundaries2(1,:), n, C, gamma);
+%         F2 = asb2.neumann_bc(f2,boundaries2(1,:));
+        [KK2, FF2] = asb2.lui_bc(ff2,g2,n,boundaries1(2,:));
+%         FF2 = F2+FF2;
         KK2 = K2+KK2;
         [d, FF2, solution2] = asb2.helmholtz_linear_solve(KK2,M2,FF2,w, ...
                                                            0,clamp_2_dofs);
         figure(5)
         solution2.plot_solution(1)
-    % Step 6: Check for convergence criteria
+%     end
+        figure(6)
+        hold on
+        solution1.plot_solution(1)
+        solution2.plot_solution(1)
+    % Step 7: Check for convergence criteria

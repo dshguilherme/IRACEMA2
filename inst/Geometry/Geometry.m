@@ -273,6 +273,139 @@ classdef Geometry < handle
                     dx = dR'*P;
             end
         end
+ function du = parameter_derivative(obj, direction, parametric_coordinate_array)
+            assert(obj.rank == numel(parametric_coordinate_array),"Error: invalid number of parameters.")
+
+            switch obj.rank
+                case 1
+                    u = parametric_coordinate_array(1);
+                    nu = obj.n(1);
+                    pu = obj.p(1);
+                    U = obj.knots{1}; 
+                    su = FindSpanLinear(nu-1,pu,u,U);
+
+                    P = obj.points;
+                    P = P(su-pu+1:su+1);
+                    P = cell2mat(P(:));
+                    Weights = P(:,4);
+                    P = P(:,1:3);
+
+                    N = DersBasisFun(su,u,pu,1,U);
+
+                    B = N(1,:);
+                    dBdu = N(2,:);
+
+                    Q = B*Weights;
+                    dQdu = dBdu*Weights;
+
+                    R = B'.*Weights/Q;
+
+                    ratios = Weights/(Q*Q);
+                    dRdu = ratios.*(Q*dBdu' -B'*dQdu);
+                    du = dRdu'*P;
+                    
+                case 2
+                    u = parametric_coordinate_array(1);
+                    nu = obj.n(1);
+                    pu = obj.p(1);
+                    U = obj.knots{1}; 
+                    su = FindSpanLinear(nu-1,pu,u,U);
+
+                    v = parametric_coordinate_array(2);
+                    nv = obj.n(2);
+                    pv = obj.p(2);
+                    V = obj.knots{2};
+                    sv = FindSpanLinear(nv-1,pv,v,V);
+
+                    P = obj.points;
+                    P = P(su-pu+1:su+1,sv-pv+1:sv+1);
+                    P = cell2mat(P(:));
+                    Weights = P(:,4);
+                    P = P(:,1:3);
+
+                    N = DersBasisFun(su,u,pu,1,U);
+                    M = DersBasisFun(sv,v,pv,1,V);
+
+                    B = kron(M(1,:),N(1,:));
+                    dBdu = kron(M(1,:),N(2,:));
+                    dBdv = kron(M(2,:),N(1,:));
+
+                    Q = B*Weights;
+                    dQdu = dBdu*Weights;
+                    dQdv = dBdv*Weights;
+
+                    R = B'.*Weights/Q;
+
+                    ratios = Weights/(Q*Q);
+                    dRdu = ratios.*(Q*dBdu' -B'*dQdu);
+                    dRdv = ratios.*(Q*dBdv' -B'*dQdv);
+
+                    if direction == 1
+                        du = dRdu'*P;
+                    elseif direction == 2
+                        du = dRdv'*P;
+                    else
+                        error('Unsupported direction')
+                    end
+                    
+                    
+                case 3
+                    u = parametric_coordinate_array(1);
+                    nu = obj.n(1);
+                    pu = obj.p(1);
+                    U = obj.knots{1}; 
+                    su = FindSpanLinear(nu-1,pu,u,U);
+
+                    v = parametric_coordinate_array(2);
+                    nv = obj.n(2);
+                    pv = obj.p(2);
+                    V = obj.knots{2};
+                    sv = FindSpanLinear(nv-1,pv,v,V);
+
+                    w = parametric_coordinate_array(3);
+                    nw = obj.n(3);
+                    pw = obj.p(3);
+                    W = obj.knots{3}; 
+                    sw = FindSpanLinear(nw-1,pw,w,W);
+
+                    P = obj.points;
+                    P = P(su-pu+1:su+1,sv-pv+1:sv+1,sw-pw+1:sw+1);
+                    P = cell2mat(P(:));
+                    Weights = P(:,4);
+                    P = P(:,1:3);
+
+                    N = DersBasisFun(su,u,pu,1,U);
+                    M = DersBasisFun(sv,v,pv,1,V);
+                    L = DersBasisFun(sw,w,pw,1,W);
+
+                    B = kron(kron(L(1,:),M(1,:)),N(1,:));
+                    dBdu = kron(kron(L(1,:),M(1,:)),N(2,:));
+                    dBdv = kron(kron(L(1,:),M(2,:)),N(1,:));
+                    dBdw = kron(kron(L(2,:),M(1,:)),N(1,:));
+
+                    Q = B*Weights;
+                    dQdu = dBdu*Weights;
+                    dQdv = dBdv*Weights;
+                    dQdw = dBdw*Weights;
+
+                    R = B'.*Weights/Q;
+
+                    ratios = Weights/(Q*Q);
+                    dRdu = ratios.*(Q*dBdu' -B'*dQdu);
+                    dRdv = ratios.*(Q*dBdv' -B'*dQdv);
+                    dRdw = ratios.*(Q*dBdw' -B'*dQdw);
+
+                    if direction == 1
+                        du = dRdu'*P;
+                    elseif direction == 2
+                        du = dRdv'*P;
+                    elseif direction == 3
+                        du = dRdw'*P;
+                    else
+                        error('Unsupported direction');
+                    end
+            end
+        end
         function reverse_eval(obj, physical_coordinate_array)
             error('In development');
 %           Step 1. Is point(x,y,z) inside Convex Hull?
