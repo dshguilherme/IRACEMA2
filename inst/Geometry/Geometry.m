@@ -124,14 +124,10 @@ classdef Geometry < handle
            
             end
         end
-        function dx = eval_derivative(obj, parametric_coordinate_array)
+
+function dx = eval_derivative(obj, parametric_coordinate_array)
             assert(obj.rank == numel(parametric_coordinate_array),"Error: invalid number of parameters.")
 
-            switch obj.rank
-                case 1
-                    u = parametric_coordinate_array(1);
-                    nu = obj.n(1);
-                    pu = obj.p(1);
                     U = obj.knots{1}; 
                     su = FindSpanLinear(nu-1,pu,u,U);
 
@@ -165,18 +161,19 @@ classdef Geometry < handle
                     dR = dRdu*dudx;
                     dx = dR'*P;                       
                 case 2
-                    u = parametric_coordinate_array(1);
-                    nu = obj.n(1);
-                    pu = obj.p(1);
-                    U = obj.knots{1}; 
+                    U = obj.knots{1};
+                    
                     su = FindSpanLinear(nu-1,pu,u,U);
-
-                    v = parametric_coordinate_array(2);
-                    nv = obj.n(2);
-                    pv = obj.p(2);
-                    V = obj.knots{2};
-                    sv = FindSpanLinear(nv-1,pv,v,V);
-
+                    P = obj.points;
+                    P = P(:);
+                    P = cell2mat(P(su-pu+1:su+1));
+                    weights = P(:,4);
+                    P = P(:,1:3);
+                    B = DersBasisFun(su,u,pu,0,U);
+                    Q = B*weights;
+                    R = B'.*weights/Q;
+                case 2
+                             
                     P = obj.points;
                     P = P(su-pu+1:su+1,sv-pv+1:sv+1);
                     P = cell2mat(P(:));
@@ -210,6 +207,7 @@ classdef Geometry < handle
 
                     dR = dRdu*dUdX(1,:) +dRdv*dUdX(2,:);
                     dx = dR'*P;           
+
                 case 3
                     u = parametric_coordinate_array(1);
                     nu = obj.n(1);
@@ -222,7 +220,6 @@ classdef Geometry < handle
                     pv = obj.p(2);
                     V = obj.knots{2};
                     sv = FindSpanLinear(nv-1,pv,v,V);
-
                     w = parametric_coordinate_array(3);
                     nw = obj.n(3);
                     pw = obj.p(3);
@@ -272,6 +269,22 @@ classdef Geometry < handle
                     dR = [dRdu, dRdv, dRdw]*dUdX';
                     dx = dR'*P;
             end
+                         
+                    P = obj.points;
+                    P = P(su-pu+1:su+1,sv-pv+1:sv+1,sw-pw+1:sw+1);
+                    P = cell2mat(P(:));
+                    weights = P(:,4);
+                    P = P(:,1:3);
+                    N = DersBasisFun(su,u,pu,0,U);
+                    M = DersBasisFun(sv,v,pv,0,V);
+                    L = DersBasisFun(sw,w,pw,0,W);
+                    B = kron(kron(L,M),N);
+                    
+                    Q = B*weights;
+                    R = B'.*weights/Q;
+            end
+            R = R';
+             
         end
  function du = parameter_derivative(obj, direction, parametric_coordinate_array)
             assert(obj.rank == numel(parametric_coordinate_array),"Error: invalid number of parameters.")
@@ -665,7 +678,7 @@ classdef Geometry < handle
                                 sup_ev = sup_v-pv+1:sup_v+1;
                                 [UU, VV] = ndgrid(sup_eu,sup_ev);
                                 basis = [UU(:), VV(:)];
-                                elm(:,e) = sub2ind(obj.n',basis(:,1),basis(:,2));                            e_range(eu,1) = uU(eu);
+                                elm(:,e) = sub2ind(obj.n',basis(:,1),basis(:,2));                            
                                 e_range(e,:,1) = [uU(eu) uU(eu+1)];
                                 e_range(e,:,2) = [uV(ev) uV(ev+1)];
                                 e = e+1;
@@ -767,6 +780,141 @@ classdef Geometry < handle
                    end
             end
         end
+        
+        function [] = plot_mesh(obj)
+            div = 50;
+            switch obj.rank
+                case 1
+                    u = unique(obj.knots{1});
+                    for i=1:numel(u)-1
+                        [x,y,z] = obj.parametric_line(i,i+1,div);
+                        plot3(x,y,z,'LineWidth',2);
+                        hold all;
+                    end
+                case 2
+                    u = unique(obj.knots{1});
+                    v = unique(obj.knots{2});
+                    for i=1:numel(u)
+                        [x,y,z] = obj.parametric_line([i,1],[i,numel(v)],div);
+                        plot3(x,y,z,'Color','black','LineWidth',2);
+                        hold all;
+                    end
+                    for i=1:numel(v)
+                        [x,y,z] = obj.parametric_line([1,i],[numel(u),i],div);
+                        plot3(x,y,z,'Color','black','LineWidth',2);
+                        hold all;
+                    end
+                case 3
+                    %extract_boundaries e fazer o mesmo pra rank 2, mas nao
+                    %esta funcionando o extract_boundaries!
+                    u = unique(obj.knots{1});
+                    v = unique(obj.knots{2});
+                    w = unique(obj.knots{3});
+                    
+                    for i=1:numel(u)
+                        for j=1:numel(v)
+                            for k=1:numel(w)
+                                [x,y,z] = obj.parametric_line([1,j,k],[numel(u),j,k],div);
+                                plot3(x,y,z,'Color','black','LineWidth',2);
+                                hold all;
+                                %
+                                [x,y,z] = obj.parametric_line([i,1,k],[i,numel(v),k],div);
+                                plot3(x,y,z,'Color','black','LineWidth',2);
+                                %
+                                [x,y,z] = obj.parametric_line([i,j,1],[i,j,numel(w)],div);
+                                plot3(x,y,z,'Color','black','LineWidth',2);
+                            end
+                        end
+                    end
+            end
+        end
+        
+        function [] = plot_cpoints(obj)
+            switch obj.rank
+                case 1
+                    P = obj.points;
+                    P = P(:);
+                    P = cell2mat(P(:));
+                    plot3(P(:,1,1),P(:,2,1),P(:,3,1),'-','Color','red','LineWidth',1);
+                    hold all;
+                    plot3(P(:,1,1),P(:,2,1),P(:,3,1),'o','MarkerFaceColor','red');
+                case 2
+                    P = obj.points;
+                    P = P(:);
+                    P = cell2mat(P(:));
+                    PX = reshape(P(:,1,1),size(obj.points));
+                    PY = reshape(P(:,2,1),size(obj.points));
+                    PZ = reshape(P(:,3,1),size(obj.points));
+                    plot3(PX,PY,PZ,'-','Color','red','LineWidth',2);
+                    hold all;
+                    plot3(PX',PY',PZ','-','Color','red','LineWidth',2);
+                    plot3(P(:,1,1),P(:,2,1),P(:,3,1),'o','MarkerFaceColor','red');
+                case 3
+                    P = obj.points;
+                    P = P(:);
+                    P = cell2mat(P(:));
+                    plot3(P(:,1,1),P(:,2,1),P(:,3,1),'o','MarkerFaceColor','red');
+                    %fix with extract boundaries
+                    %for i =1:6, do the same as in rank 2
+            end
+        end
+        
+        function [x,y,z] = parametric_line(obj,from_span,to_span, div)
+            %for internal use only
+            %from_span = [1,2], to_span = [1,4], draw a line from the
+            %v_span = 2 to v_span = 4
+            %with u fixed at u_span = 1 (1 to 1)
+            switch obj.rank
+                case 1
+                    u = unique(obj.knots{1}); %get non null spans
+                    %since it's a curve (or line in parametric space)
+                    %length(from_span) and length(to_span)= 1
+                    u_ = linspace(u(from_span),u(to_span),div);
+                    x = zeros(div,1);
+                    y = x;
+                    z = x;
+                    for i=1:length(x)
+                        point = obj.eval_point(u_(i));
+                        x(i) = point(1);
+                        y(i) = point(2);
+                        z(i) = point(3);
+                    end
+                    
+                case 2
+                    u = unique(obj.knots{1});
+                    v = unique(obj.knots{2});
+                    u_ = linspace(u(from_span(1)),u(to_span(1)),div);
+                    v_ = linspace(v(from_span(2)),v(to_span(2)),div);
+                    x = zeros(div,1);
+                    y = x;
+                    z = x;
+                    for i=1:length(x)
+                        point = obj.eval_point([u_(i),v_(i)]);
+                        x(i) = point(1);
+                        y(i) = point(2);
+                        z(i) = point(3);
+                    end
+                    
+                case 3
+                    u = unique(obj.knots{1});
+                    v = unique(obj.knots{2});
+                    w = unique(obj.knots{3});
+                    u_ = linspace(u(from_span(1)),u(to_span(1)),div);
+                    v_ = linspace(v(from_span(2)),v(to_span(2)),div);
+                    w_ = linspace(w(from_span(3)),w(to_span(3)),div);
+                    x = zeros(div,1);
+                    y = x;
+                    z = x;
+                    for i=1:length(x)
+                        point = obj.eval_point([u_(i),v_(i),w_(i)]);
+                        x(i) = point(1);
+                        y(i) = point(2);
+                        z(i) = point(3);
+                    end
+            end
+        end
+        
+                       
         
     end
     

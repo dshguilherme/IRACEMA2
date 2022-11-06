@@ -556,6 +556,66 @@ classdef Assembler
            M = sparse(M);
         end
         
+        function up = plot_qpoints(obj)
+            geo = obj.domain;
+            [qp, ~] = obj.quad_rule;
+            [elm e_range] = geo.element_local_mapping;
+            nel = size(elm,2);
+            nq = length(qp);
+            up = zeros(nel,nq,3);
+            for e=1:nel
+                u = zeros(length(qp),geo.rank);
+                for i=1:geo.rank
+                    r = e_range(e,:,i);
+                    u(:,i) = (0.5*((r(2)-r(1))*qp(:,i) +sum(r)));
+                end
+                for j=1:nq
+                    x = geo.eval_point(u(j,:));
+                    up(e,j,:) = x;
+                end
+            end
+            up = reshape(up,[nel*nq,3]);
+            figure(1)
+            scatter3(up(:,1),up(:,2),up(:,3));
+        end
+        
+        function up = plot_bqpoints(obj)
+            geo = obj.domain;
+            [qp, ~] = obj.boundary_quad_rule;
+            [elm e_range] = geo.element_local_mapping;
+            bdries = geo.extract_boundaries;
+            up = cell(geo.rank*2,1);
+            for b=1:geo.rank*2
+
+                qpoints = qp{b};
+                elmap = elm(:,bdries{b,2});
+                erang = e_range(bdries{b,2},:,:);
+                nel = size(elmap,2);
+                nq = length(qpoints);            
+                qarray = zeros(nel,nq,3);
+                for e=1:nel
+                    u = zeros(nq,geo.rank);
+                    for i=1:geo.rank
+                        r = erang(e,:,i);
+                        u(:,i) = (0.5*((r(2)-r(1))*qpoints(:,i) +sum(r)));
+                    end
+                    for j=1:nq
+                        x = geo.eval_point(u(j,:));
+                        qarray(e,j,:) = x;
+                    end
+                end
+                qarray = reshape(qarray,[nel*nq,3]);
+                up{b} = qarray;
+            end
+            figure(1)
+            hold on
+            grid on
+            for b=1:geo.rank*2
+                a = up{b};
+                scatter3(a(:,1),a(:,2),a(:,3));
+            end
+        end            
+        
     end
        
         

@@ -20,7 +20,7 @@ arc = bs_arc(center, initial_point, theta, normal);
 domain = bs_ruled_surface(line,arc);
 
 % Refinement
-Xi = linspace(0,1,36);
+Xi = linspace(0,1,18);
 Xi = Xi(2:end-1);
 domain.uniform_k_refine(Xi,2);
 % domain.knot_refine(Xi,1)
