@@ -128,6 +128,8 @@ classdef Geometry < handle
 function dx = eval_derivative(obj, parametric_coordinate_array)
             assert(obj.rank == numel(parametric_coordinate_array),"Error: invalid number of parameters.")
 
+          switch obj.rank
+              case 1
                     U = obj.knots{1}; 
                     su = FindSpanLinear(nu-1,pu,u,U);
 
@@ -282,10 +284,10 @@ function dx = eval_derivative(obj, parametric_coordinate_array)
                     
                     Q = B*weights;
                     R = B'.*weights/Q;
-            end
-            R = R';
+                    R = R';            
+                end
+            
              
-        end
  function du = parameter_derivative(obj, direction, parametric_coordinate_array)
             assert(obj.rank == numel(parametric_coordinate_array),"Error: invalid number of parameters.")
 
@@ -428,6 +430,10 @@ function dx = eval_derivative(obj, parametric_coordinate_array)
         end
         
         function boundaries = extract_boundaries(obj)
+%             Cell array with columns:
+%             Geometry | Elements on Boundary | Boundary # | ControlPoint #
+%             If boundary # is odd, u/v/w = 0
+%             If boundary # is even, u/v/w = 1
             r = obj.rank;
             boundaries = cell(r*2,4);
             elm = obj.element_local_mapping;
@@ -486,7 +492,7 @@ function dx = eval_derivative(obj, parametric_coordinate_array)
                     boundaries{3,2} = b3_elements;
                     boundaries{4,2} = b4_elements;
                     boundaries{3,4} = b3_points;
-                    boundaries{4,4} = b3_points;
+                    boundaries{4,4} = b4_points;
                    clear b1_idx b2_idx                        
                 case 3
                     n = obj.n;

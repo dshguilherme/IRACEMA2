@@ -1,4 +1,4 @@
-classdef Assembler
+classdef Assembler < handle
     
     properties
         
@@ -97,6 +97,31 @@ classdef Assembler
                     end
             end
             
+        end
+        
+        function A = computeDomainNorm(obj)
+           d = obj.dimensions;
+           [global_basis_index, element_local_mapping, element_ranges] = ...
+               GetConnectivityArrays(obj.domain);
+           [~, lm] = BuildGlobalLocalMatrices(element_local_mapping, d);
+           
+           [qp, qw] = obj.quad_rule;
+           n_quad = length(qw);
+           
+           ndof = max(max(element_local_mapping))*d;
+           [nel_dof, nel] = size(element_local_mapping);
+            
+           A = 0;
+           for e=1:nel
+                for n=1:n_quad
+                    q = qp(n,:);
+                    [~, ~, J] = FastShape(obj.domain, q, global_basis_index, ...
+                        element_local_mapping, element_ranges, e);
+                    Jmod = abs(J*qw(n));
+                    A = A +Jmod;
+                end
+           end
+                    
         end
         
         function [qpoints, qweights] = boundary_quad_rule(obj)

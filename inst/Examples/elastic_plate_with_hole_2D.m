@@ -75,9 +75,9 @@ figure(1)
 solution.plot_solution(1)
 [x, xx] = solution.eval_solution([0 1]);
 colormap(jet)
-% figure(2)
-% [stress_d, s_sol] = asb.project_stress(d);
-% s_sol.plot_solution(1);
+figure(2)
+[stress_d, s_sol] = asb.project_stress(d);
+s_sol.plot_solution(1);
 
 
 
