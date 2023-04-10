@@ -140,9 +140,8 @@ classdef CahnHilliardMixed < Assembler & handle
             for i=1:max_corrections+1
                 residual = obj.assembleResidual;
                 res_norm = norm(residual);
-                if res_norm < 1e-5
+                if res_norm < 1e-4
                     converged = 1;
-                    n_steps = i;
                     break
                 end
                 tangent = obj.assembleTangent;
@@ -154,7 +153,7 @@ classdef CahnHilliardMixed < Assembler & handle
             n_steps = i;
         end
         
-        function [t, steps] =  timeLoop(obj)
+        function timeLoop(obj)
             t = 0;
             steps = 1;
             while (t < obj.t_max) && (steps < obj.max_timesteps)
@@ -176,9 +175,36 @@ classdef CahnHilliardMixed < Assembler & handle
                     obj.dt = 0.5*obj.dt;
                 end
             end
-            obj.timetable = obj.timetable(1:steps,:);
+            obj.timetable = obj.timetable(1:steps-1,:);
         end
            %% Aux Functions
+           function plotEvolution(obj)
+                t_array = obj.timetable(:,1);
+                dt_array = obj.timetable(:,2);
+                eT = obj.timetable(:,3);
+                eB = obj.timetable(:,4);
+                eI = obj.timetable(:,5);
+                figure(3)
+                loglog(t_array,dt_array)
+                set(gca, 'FontSize',18)
+                ylabel('dt [s]', 'FontWeight', 'bold', 'FontSize', 23)
+                xlabel('time [s]', 'FontWeight', 'bold', 'FontSize', 23)
+                title('Time Adaptativity', 'FontWeight', 'bold', 'FontSize', 23)
+                grid on
+                
+                figure(4)
+                hold on
+                plot(t_array,eT, 'LineWidth', 3)
+                plot(t_array,eB, 'LineWidth', 3)
+                plot(t_array,eI, 'LineWidth', 3)
+                legend('Total Energy', 'Bulk Energy', 'Interface Energy')
+                set(gca, 'FontSize', 18)
+                ylabel('Energy [J]', 'FontWeight', 'bold', 'FontSize', 23)
+                xlabel('time [s]', 'FontWeight', 'bold', 'FontSize', 23)
+                title('Free Energy Functional', 'FontWeight', 'bold', 'FontSize', 23)
+                grid on
+           end
+           
             function [c, gradc, mu, grad_mu] = localConcentrationInfo(obj, R, dR, elm, e, c_vec, mu_vec)
                 ind = elm(:,e);
                 c = dot(R, c_vec(ind));
@@ -213,7 +239,8 @@ classdef CahnHilliardMixed < Assembler & handle
                 end
             end
             eT = eB +eI;
-        end         
+        end
+        
     end
             
 end

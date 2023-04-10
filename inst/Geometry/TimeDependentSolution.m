@@ -38,6 +38,7 @@ classdef TimeDependentSolution < Solution
        end
         
        function snapSolution(obj, name, framerate)
+           
            figure(1)
            for i = 1:framerate:size(obj.d, 2)
                gct = obj.plot_solution(i);
