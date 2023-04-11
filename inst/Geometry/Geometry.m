@@ -421,13 +421,7 @@ function dx = eval_derivative(obj, parametric_coordinate_array)
                     end
             end
         end
-        function reverse_eval(obj, physical_coordinate_array)
-            error('In development');
-%           Step 1. Is point(x,y,z) inside Convex Hull?
-%           Step 2. KnotRefine -> Bezier patches
-%           Step 3. Find the neareast candidate points
-%           Step 4. Find the closest point to the curve within tolerance
-        end
+
         
         function boundaries = extract_boundaries(obj)
 %             Cell array with columns:

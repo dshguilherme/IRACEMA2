@@ -1,6 +1,6 @@
-function[R, dR, d2R, Jmod, c, cdot, gradc, nablac] = CHShape(CHAssembler, cf, cdotm, IntegrationPoint, ...
-    global_basis_index, element_local_mapping, element_ranges, element)
-
+function [R, dR, Jmod, c, gradc, mu, gradmu] = CHMixedShape(CHAssembler, cmid, mumid, ...
+    IntegrationPoint, global_basis_index, element_local_mapping, element_ranges, element)
+    
     GeometryObject = CHAssembler.domain;
 
     qu = IntegrationPoint(1);
@@ -30,8 +30,8 @@ function[R, dR, d2R, Jmod, c, cdot, gradc, nablac] = CHShape(CHAssembler, cf, cd
     Weights = ActivePoints(:,4);
     P = ActivePoints(:,1:3);
 
-    active_c = cf(ind);
-    active_cdot = cdotm(ind);
+    active_c = cmid(ind);
+    active_mu = mumid(length(cmid)/2+ind);
 
     N = DersBasisFun(su,u,pu,2,U);
     M = DersBasisFun(sv,v,pv,2,V);
@@ -39,11 +39,9 @@ function[R, dR, d2R, Jmod, c, cdot, gradc, nablac] = CHShape(CHAssembler, cf, cd
     R = kron(M(1,:),N(1,:));
     dRdu = kron(M(1,:),N(2,:));
     dRdv = kron(M(2,:),N(1,:));
-    d2Rdu2 = kron(M(1,:), N(3,:));
-    d2Rdv2 = kron(M(3,:), N(1,:));
-    d2Rdudv = kron(M(2,:),N(2,:));
+    
     c = R*active_c;
-    cdot = R*active_cdot;
+    mu = R*active_mu;
     x = R*P;
 
     dxdu = dRdu*P;
@@ -57,10 +55,9 @@ function[R, dR, d2R, Jmod, c, cdot, gradc, nablac] = CHShape(CHAssembler, cf, cd
     dudy = dUdX(1,2);
     dvdx = dUdX(2,1);
     dvdy = dUdX(2,2);
-    d2R = [(dudx^2)*d2Rdu2'+(dvdx^2)*d2Rdv2'+2*dudx*dvdx*d2Rdudv',(dudy^2)*d2Rdu2'+(dvdy^2)*d2Rdv2'+2*dudy*dvdy*d2Rdudv'];
-    d2R = sum(d2R,2);
+  
     gradc = active_c'*dR;
-    nablac = active_c'*d2R;
+    gradmu = active_mu'*dR;
     R = R';
     tmp = element_ranges(element,2,:) - element_ranges(element,1,:);
     tmp = squeeze(tmp);
@@ -68,5 +65,4 @@ function[R, dR, d2R, Jmod, c, cdot, gradc, nablac] = CHShape(CHAssembler, cf, cd
     Jacobian = dXdU(:,1)*dQdU(1,:) + dXdU(:,2)*dQdU(2,:);
     Jacobian = Jacobian'*Jacobian;
     Jmod = sqrt(det(Jacobian));
-
 end

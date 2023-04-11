@@ -99,6 +99,20 @@ classdef Assembler < handle
             
         end
         
+        function [global_basis_index, element_local_mapping, element_ranges, ...
+                location_matrix, qp, qw, n_quad, ndof, nel_dof, nel] = preLoopParser(obj)
+            d = obj.dimensions;
+           [global_basis_index, element_local_mapping, element_ranges] = ...
+               GetConnectivityArrays(obj.domain);
+           [~, location_matrix] = BuildGlobalLocalMatrices(element_local_mapping, d);
+           
+           [qp, qw] = obj.quad_rule;
+           n_quad = length(qw);
+           
+           ndof = max(max(element_local_mapping))*d;
+           [nel_dof, nel] = size(element_local_mapping);
+        end
+        
         function A = computeDomainNorm(obj)
            d = obj.dimensions;
            [global_basis_index, element_local_mapping, element_ranges] = ...
@@ -272,7 +286,7 @@ classdef Assembler < handle
             %  WARNING: ONLY WORKING FOR 2D OBJECTS ON XY PLANE
             d = obj.dimensions;
             gbi = obj.domain.global_basis_index;
-            [elm e_range] = obj.domain.element_local_mapping;
+            [elm, e_range] = obj.domain.element_local_mapping;
             id = obj.id_matrix;
             lm = obj.location_matrix;
             

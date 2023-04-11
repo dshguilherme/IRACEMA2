@@ -20,21 +20,36 @@ classdef TimeDependentSolution < Solution
         obj.cpoints = cpoints;
        end
        
-        function F = recordSolution(obj, name,framerate)
+       function recordSolution(obj, name,framerate)
             figure(1)
             vidFile = VideoWriter(name, 'MPEG-4');
             vidFile.FrameRate = framerate;
             open(vidFile)
-%             F = struct(1,size(obj.d,2));
             for i = 1:size(obj.d,2)
                 gcf = obj.plot_solution(i);
                 caxis([0 1])
+                xlim([0 1])
+                ylim([0 1])
                 view(0,90)
                 drawnow
-                F(i) = getframe;
                 writeVideo(vidFile, F(i));
             end
             close(vidFile)
-        end
+       end
+        
+       function snapSolution(obj, name, framerate)
+           
+           figure(1)
+           for i = 1:framerate:size(obj.d, 2)
+               gct = obj.plot_solution(i);
+               caxis([0 1])
+               xlim([0 1])
+               ylim([0 1])
+               view(0,90)
+               drawnow
+               saveas(gcf,[name,num2str(i),'.png'])
+           end
+       end
+       
     end
 end
