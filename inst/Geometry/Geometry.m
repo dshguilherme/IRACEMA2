@@ -124,6 +124,31 @@ classdef Geometry < handle
            
             end
         end
+        
+        function x = evalPointFromQuadrature(obj, q, er, e)
+                    qu = q(1);
+                    U = obj.knots{1};
+                    pu = obj.p(1);
+                    u_range = er(e,:,1);
+                    u = ((u_range(2) - u_range(1))*qu +(sum(u_range)))/2;
+                    if obj.rank == 1
+                        x = obj.eval_point(u);
+                    elseif obj.rank > 1
+                        qv = q(2);
+                        V = obj.knots{2};
+                        pv = obj.p(2);
+                        v_range = er(e,:,2);
+                        v = ((v_range(2) - v_range(1))*qv +(sum(v_range)))/2;
+                        x = obj.eval_point([u v]);
+                    elseif obj.rank > 2
+                        qw = q(3);
+                        W = obj.knots{3};
+                        pw = obj.p(3);
+                        w_range = er(e,:,3);
+                        w = ((w_range(2) - w_range(1))*qw +(sum(w_range)))/2;
+                        x = obj.eval_points([u v w]);
+                    end
+        end
 
 function dx = eval_derivative(obj, parametric_coordinate_array)
             assert(obj.rank == numel(parametric_coordinate_array),"Error: invalid number of parameters.")
@@ -428,6 +453,13 @@ function dx = eval_derivative(obj, parametric_coordinate_array)
 %             Geometry | Elements on Boundary | Boundary # | ControlPoint #
 %             If boundary # is odd, u/v/w = 0
 %             If boundary # is even, u/v/w = 1
+%             Boundaries go in u,v,w order, so
+%             1 -> u = 0
+%             2 -> u = 1
+%             3 -> v = 0
+%             4 -> v = 1
+%             5 -> w = 0
+%             6 -> w = 1
             r = obj.rank;
             boundaries = cell(r*2,4);
             elm = obj.element_local_mapping;

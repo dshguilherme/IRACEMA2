@@ -176,6 +176,7 @@ classdef CahnHilliardMixed < Assembler & handle
                 end
             end
             obj.timetable = obj.timetable(1:steps-1,:);
+            obj.solution_array = obj.solution_array(:,1:steps-1);
         end
            %% Aux Functions
            function plotEvolution(obj)

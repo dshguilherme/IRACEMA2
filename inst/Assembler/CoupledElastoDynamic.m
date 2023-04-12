@@ -1,4 +1,4 @@
-classdef CoupledElastoDynamic < Assembler & handle
+classdef ElastoDynamic < Assembler & handle
     properties
         young_modulus;
         poisson_ratio;
@@ -78,7 +78,7 @@ classdef CoupledElastoDynamic < Assembler & handle
                     N = kron(R', eye(d));
                     D = obj.D0;
                     k = k +Jmod*(B'*D)*B;
-                    m = m +Jmod*obj.density*(N'*N);
+                    m = m +Jmod*obj.rho*(N'*N);
                     
                 end
                 idx = lm(:,e)';
@@ -90,8 +90,119 @@ classdef CoupledElastoDynamic < Assembler & handle
         end
         
         function F = assembleForce(obj, f)
-            
+            d = obj.dimensions;
+            [gbi, elm, er, lm, qp, qw, n_quad, ndof, nel_dof, nel] = obj.preLoopParser;
+            F = zeros(ndof,1);
+            for e=1:nel
+                f_e = zeros(nel_dof,d);
+                for n=1:n_quad
+                    q = qp(n,:);
+                    [R, dR, J] = FastShape(obj.domain, q, gbi, elm, er, e);
+                    Jmod = abs(J*qw(n));
+                    x = obj.domain.evalPointFromQuadrature(q, er, e);
+                    ff = f(x);
+                    for i=1:d
+                        f_e(:,i) = f_e(:,i) +Jmod*R*ff(i);
+                    end
+                end
+                idx = lm(:,e)';
+                F(idx) = F(idx) + f_e(:);
+            end
+            F = sparse(F);
         end
+        %% Boundary Conditions
+        function F = applyTraction(obj, t, side)
+            % Apply Neumann boundary condition on one side of the domain
+            d = obj.dimensions;
+            [gbi, elm, er, lm, ~, ~, ~, ndof, nel_dof, nel] = obj.preLoopParser;
+            F = zeros(ndof,1);
+            b = obj.domain.extract_boundaries;
+            elements = b{side,2};
+            [qp, qw] = obj.boundary_quad_rule(side);
+            n_quad = length(qw);
+            for i = 1:numel(elements)
+                e = elements(i);
+                f_e = zeros(nel_dof, d);
+                for n=1:n_quad
+                    q = qp(n,:);
+                    [R, dR, J] = FastShape(obj.domain, q, gbi, elm, er, e);
+                    Jmod = abs(J*qw(n));
+                    for j=1:d
+                        f_e(:,j) = f_e(:,j) +Jmod*R*t(j);
+                    end
+                end
+                idx = lm(:,e)';
+                F(idx) = F(idx) +f_e(:);
+            end
+            F = sparse(F);
+        end
+            
+                
+        %% Solving
+        function d = solveLinearElasticity(obj, f, t, sides, g, dofs)
+            [K, ~] = obj.assembleMatrices;
+            F = obj.assembleForce(f);
+            for i=1:numel(sides)
+                FN = obj.applyTraction(t{i}, sides(i));
+                F = F+FN;
+            end
+            [d, ~, ~] = obj.dirichlet_linear_solve(K,F,g,dofs);
+        end
+        
+        function d = solveDynamicProblem(obj, f, omega, dofs)
+            [K, M] = obj.assembleMatrices;
+            F = obj.assembleForce(f);
+            C = obj.alpha*M +obj.beta*K;
+            Kd = K +1i*omega*C -omega*omega*M;
+            g = zeros(numel(dofs),1);
+            [d, ~, ~] = obj.dirichlet_linear_solve(Kd, F, g, dofs);
+        end
+        
+        function [d, omega, modal_solution] = naturalModes(obj, sides, num_modes)
+            [K, M] = obj.assembleMatrices;
+            b = obj.domain.extract_boundaries;
+            id = obj.id_matrix;
+            clamped_dofs = [];
+            for i=1:numel(sides)
+                side = sides(i);
+                cpoints = b{side,4};
+                dofs = id(cpoints,:);
+                dofs = dofs(:);
+                clamped_dofs = [clamped_dofs; dofs];
+            end
+            clamped_dofs = unique(clamped_dofs);
+            unclamped_dofs = setdiff(1:length(K), clamped_dofs);
+            clamped_dofs = sort(clamped_dofs(:), 'asc');
+            K(clamped_dofs,:) = [];
+            K(:, clamped_dofs) = [];
+            M(clamped_dofs,:) = [];
+            M(:, clamped_dofs) = [];
+            [V, W] = eigs(K, M, num_modes,'sm');
+            omega = sqrt(diag(W));
+            
+            [~, sz2] = size(V);
+            d = zeros(numel(clamped_dofs) +numel(unclamped_dofs),sz2);
+            d(unclamped_dofs,:) = V;
+            modal_solution = cell(num_modes,1);
+            for i=1:num_modes
+                modal_solution{i} = Solution(obj, d(:,i));
+            end
+        end
+        
+        function FRFs = pointFRF(obj, f, omega_range, clamped_dofs, points)
+            [K, M] = obj.assembleMatrices;
+            F = obj.assembleForce(f);
+            C = obj.alpha*M +obj.beta*K;
+            FRFs = zeros(numel(points),numel(omega_range));
+            for j=1:numel(omega_range)
+                omega = omega_range(j);
+                Kd = K +1i*omega*C -omega*omega*M;
+                g = zeros(numel(clamped_dofs),1);
+                [d, ~, ~] = obj.dirichlet_linear_solve(Kd, F, g, clamped_dofs);
+                FRFs(:,j) = d(points);
+            end
+        end
+        
         %% Utility Functions
     end
 end
