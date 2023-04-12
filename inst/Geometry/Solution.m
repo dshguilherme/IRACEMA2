@@ -3,7 +3,7 @@ classdef Solution < Geometry
     properties
         
         id;
-        d;
+        d; % Solution array
         asb; % Assembler object
         domain; % Geometry obj
         cpoints; % Solution's dofs

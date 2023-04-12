@@ -1,160 +1,208 @@
-classdef Elastodynamic < Elastic
-    
+classdef Elastodynamic < Assembler & handle
     properties
-        density;
-        speed_of_sound;
+        young_modulus;
+        poisson_ratio;
+        stress_tensor;
+        rho; % Density
+        alpha; % Rayleigh damping factor
+        beta; % Rayleigh damping factor
+        lambda; % Lamé parameter
+        mu; % Lamé parameter
+        D0; % Voigt material properties tensor
+        
     end
     
     methods
         
-        function obj = Elastodynamic(rho,young,poisson,quadrature,dimensions,domain)
-            obj@Elastic(young,poisson,quadrature,dimensions,domain);
-            obj.density = rho;
-            obj.speed_of_sound = sqrt(obj.young_modulus/rho);
+        function obj = Elastodynamic(young, poisson, density, alpha, beta, ...
+                quadrature, dimensions, domain)
+            obj@Assembler(quadrature, dimensions, domain);
+            n = dimensions;
+            
+            obj.young_modulus = young;
+            obj.poisson_ratio = poisson;
+            
+            lambda = poisson*young/((1+poisson)*(1-2*poisson));
+            mu = young/(2*(1+poisson));
+            
+            c = zeros(n,n,n,n);
+            D = zeros(2*n -(1-mod(n,2)));
+            for i=1:2
+                for j=1:2
+                    for k=1:2
+                        for ell = 1:2
+                            c(i,j,k,ell) = ...
+                                kronDelta(i,j)*kronDelta(k,ell)*lambda ...
+                                +mu*(kronDelta(i,k)*kronDelta(j,ell) ...
+                                + kronDelta(i,ell)*kronDelta(j,k));
+                            if n == 2
+                                I = Voigt2D(i,j);
+                                J = Voigt2D(k,ell);
+                            elseif n == 3
+                                I = Voigt3D(i,j);
+                                J = Voigt3D(k,ell);
+                            end
+                            D(I,J) = c(i,j,k,ell);
+                        end
+                    end
+                end
+            end
+            obj.stress_tensor = c;
+            obj.D0 = D;
+            obj.lambda = lambda;
+            obj.mu = mu;
+            obj.rho = density;
+            obj.alpha = alpha;
+            obj.beta = beta;            
         end
         
-        function M =  build_mass(obj)
-           d = obj.dimensions;
-           [global_basis_index, element_local_mapping, element_ranges] = ...
-                GetConnectivityArrays(obj.domain);
-           [~, lm] = BuildGlobalLocalMatrices(element_local_mapping, d);
-            
-           [qp, qw] = obj.quad_rule;
-           n_quad = length(qw);
-            
-           ndof = max(max(element_local_mapping))*d;
-           [nel_dof, nel] = size(element_local_mapping);
-            
-           M = zeros(ndof);
-            
-           for e=1:nel
-               M_e = zeros(nel_dof*d);
-               for n=1:n_quad
-                   q = qp(n,:);
-                   [R, ~, J] = FastShape(obj.domain, q, global_basis_index, ...
-                       element_local_mapping, element_ranges, e);
-                   Jmod = abs(J*qw(n));
-                   N = kron(R',eye(d));
-                   M_e = M_e +Jmod*obj.density*(N'*N);
-               end
-               idx = lm(:,e)';
-               M(idx,idx) = M(idx,idx) +M_e;
-           end
-           M = sparse(M);         
+        %% Assembly Functions
+        function [K, M, F] = assembleSystem(obj, f)
+            [K, M] = obj.assembleMatrices;
+            F = obj.assembleForce(f);
         end
         
-        function [K, M] = build_matrices(obj)
-           d = obj.dimensions;
-           [global_basis_index, element_local_mapping, element_ranges] = ...
-               GetConnectivityArrays(obj.domain);
-           [~, lm] = BuildGlobalLocalMatrices(element_local_mapping, d);
-           
-           [qp, qw] = obj.quad_rule;
-           n_quad = length(qw);
-           
-           ndof = max(max(element_local_mapping))*d;
-           [nel_dof, nel] = size(element_local_mapping);
-            
-           K = zeros(ndof);
-           M = zeros(ndof);
-           for e=1:nel
-                K_e = zeros(nel_dof*d);
-                M_e = K_e;
+        function [K, M] = assembleMatrices(obj)
+            d = obj.dimensions;
+            [gbi, elm, er, lm, qp, qw, n_quad, ndof, nel_dof, nel] = obj.preLoopParser;
+            K = zeros(ndof);
+            M = K;
+            for e=1:nel
+                k = zeros(nel_dof*d);
+                m = zeros(nel_dof*d);
                 for n=1:n_quad
                     q = qp(n,:);
-                    [R, dR, J] = FastShape(obj.domain, q, global_basis_index, ...
-                        element_local_mapping, element_ranges, e);
+                    [R, dR, J] = FastShape(obj.domain, q, gbi, elm, er, e);
                     Jmod = abs(J*qw(n));
+                    B = elementStiffness(dR, d, nel_dof);
+                    N = kron(R', eye(d));
+                    D = obj.D0;
+                    k = k +Jmod*(B'*D)*B;
+                    m = m +Jmod*obj.rho*(N'*N);
                     
-                    % There should be a better way to write this
-                    B = zeros(d,nel_dof*d);
-                    for i=1:d
-                        B(i,i:d:end) = dR(:,i);
-                    end
-                    if d == 2
-                        B(3,1:d:end) = dR(:,2);
-                        B(3,2:d:end) = dR(:,1);
-                    elseif d == 3
-                        B(4,2:d:end) = dR(:,3);
-                        B(4,3:d:end) = dR(:,2);
-                        B(5,1:d:end) = dR(:,3);
-                        B(5,3:d:end) = dR(:,1);
-                        B(6,1:d:end) = dR(:,2);
-                        B(6,2:d:end) = dR(:,1);
-                    else
-                        error('Could not build stress-strain matrix: obj.dimension should be 2 or 3');
-                    end
-                    C = obj.D;
-                    K_e = K_e +Jmod*B'*C*B;
-                    N = kron(R',eye(d));
-                    M_e = M_e +Jmod*obj.density*(N'*N);
                 end
                 idx = lm(:,e)';
-                K(idx,idx) = K(idx,idx) +K_e;
-                M(idx,idx) = M(idx,idx) +M_e;
-           end
-           K = sparse(K);
-           M = sparse(M);            
+                K(idx,idx) = K(idx,idx) +k;
+                M(idx,idx) = M(idx,idx) +m;
+            end
+            K = sparse(K);
+            M = sparse(M);
         end
         
-        function [K_c, M_c] = clamp_boundary(obj,K, M)
-            boundaries = obj.domain.extract_boundaries;
-            clamp_dofs = boundaries(:,2);
-            clamp_dofs = unique(cell2mat(clamp_dofs(:)));        
-            
-            K_c = full(K);
-            M_c = full(M);
-            
-            K_c(clamp_dofs,:) = [];
-            K_c(:,clamp_dofs) = [];
-            
-            M_c(clamp_dofs,:) = [];
-            M_c(:,clamp_dofs) = [];
-            K_c = sparse(K_c);
-            M_c = sparse(M_c);
-        end
-        
-        function [K_c, M_c] = clamp_dofs(obj,K,M,dofs)
-            K_c = full(K);
-            M_c = full(M);
-            
-            K_c(dofs,:) = [];
-            K_c(:,dofs) = [];
-            
-            M_c(dofs,:) = [];
-            M_c(:,dofs) = [];  
-            K_c = sparse(K_c);
-            M_c = sparse(M_c);
-        end
-         function [vecs, omega, solution_cell] = eigensolve(obj,K,M,n_modes,clamp_dofs)
-            [K_c, M_c] = obj.clamp_dofs(K,M,clamp_dofs);
-            
-            [vecs, omega] = eigs(K_c,M_c,n_modes,'sm');
-            omega = sqrt(diag(omega));
-            
-            [s1, s2] = size(vecs);
-            dofs = sort(clamp_dofs,'asc');
-            ndof = s1+numel(dofs);
-            
-            padding = zeros(1, s2);
-            for i=1:numel(dofs)
-                if dofs(i) == 1
-                    vecs = [padding; vecs(1:end,:)];
-                elseif dofs(i) == ndof
-                    vecs = [vecs(1:end,:); padding];
-                else
-                    vecs = [vecs(1:dofs(i)-1,:); padding; vecs(dofs(i):end,:)];
+        function F = assembleForce(obj, f)
+            d = obj.dimensions;
+            [gbi, elm, er, lm, qp, qw, n_quad, ndof, nel_dof, nel] = obj.preLoopParser;
+            F = zeros(ndof,1);
+            for e=1:nel
+                f_e = zeros(nel_dof,d);
+                for n=1:n_quad
+                    q = qp(n,:);
+                    [R, dR, J] = FastShape(obj.domain, q, gbi, elm, er, e);
+                    Jmod = abs(J*qw(n));
+                    x = obj.domain.evalPointFromQuadrature(q, er, e);
+                    ff = f(x);
+                    for i=1:d
+                        f_e(:,i) = f_e(:,i) +Jmod*R*ff(i);
+                    end
                 end
+                idx = lm(:,e)';
+                F(idx) = F(idx) + f_e(:);
             end
-            solution_cell = cell(n_modes);
-            for i=1:n_modes
-                solution_cell{i} = Solution(obj, vecs(:,i));
+            F = sparse(F);
+        end
+        %% Boundary Conditions
+        function F = applyTraction(obj, t, side)
+            % Apply Neumann boundary condition on one side of the domain
+            d = obj.dimensions;
+            [gbi, elm, er, lm, ~, ~, ~, ndof, nel_dof, nel] = obj.preLoopParser;
+            F = zeros(ndof,1);
+            b = obj.domain.extract_boundaries;
+            elements = b{side,2};
+            [qp, qw] = obj.boundary_quad_rule(side);
+            n_quad = length(qw);
+            for i = 1:numel(elements)
+                e = elements(i);
+                f_e = zeros(nel_dof, d);
+                for n=1:n_quad
+                    q = qp(n,:);
+                    [R, dR, J] = FastShape(obj.domain, q, gbi, elm, er, e);
+                    Jmod = abs(J*qw(n));
+                    for j=1:d
+                        f_e(:,j) = f_e(:,j) +Jmod*R*t(j);
+                    end
+                end
+                idx = lm(:,e)';
+                F(idx) = F(idx) +f_e(:);
             end
-        end          
-        function integrate_time(varargin)
-            error('Not currently implemented.')
+            F = sparse(F);
+        end
+            
+                
+        %% Solving
+        function d = solveLinearElasticity(obj, f, t, sides, g, dofs)
+            [K, ~] = obj.assembleMatrices;
+            F = obj.assembleForce(f);
+            for i=1:numel(sides)
+                FN = obj.applyTraction(t{i}, sides(i));
+                F = F+FN;
+            end
+            [d, ~, ~] = obj.dirichlet_linear_solve(K,F,g,dofs);
         end
         
+        function d = solveDynamicProblem(obj, f, omega, dofs)
+            [K, M] = obj.assembleMatrices;
+            F = obj.assembleForce(f);
+            C = obj.alpha*M +obj.beta*K;
+            Kd = K +1i*omega*C -omega*omega*M;
+            g = zeros(numel(dofs),1);
+            [d, ~, ~] = obj.dirichlet_linear_solve(Kd, F, g, dofs);
+        end
+        
+        function [d, omega, modal_solution] = naturalModes(obj, sides, num_modes)
+            [K, M] = obj.assembleMatrices;
+            b = obj.domain.extract_boundaries;
+            id = obj.id_matrix;
+            clamped_dofs = [];
+            for i=1:numel(sides)
+                side = sides(i);
+                cpoints = b{side,4};
+                dofs = id(cpoints,:);
+                dofs = dofs(:);
+                clamped_dofs = [clamped_dofs; dofs];
+            end
+            clamped_dofs = unique(clamped_dofs);
+            unclamped_dofs = setdiff(1:length(K), clamped_dofs);
+            clamped_dofs = sort(clamped_dofs(:), 'asc');
+            K(clamped_dofs,:) = [];
+            K(:, clamped_dofs) = [];
+            M(clamped_dofs,:) = [];
+            M(:, clamped_dofs) = [];
+            [V, W] = eigs(K, M, num_modes,'sm');
+            omega = sqrt(diag(W));
+            
+            [~, sz2] = size(V);
+            d = zeros(numel(clamped_dofs) +numel(unclamped_dofs),sz2);
+            d(unclamped_dofs,:) = V;
+            modal_solution = cell(num_modes,1);
+            for i=1:num_modes
+                modal_solution{i} = Solution(obj, d(:,i));
+            end
+        end
+        
+        function FRFs = pointFRF(obj, f, omega_range, clamped_dofs, points)
+            [K, M] = obj.assembleMatrices;
+            F = obj.assembleForce(f);
+            C = obj.alpha*M +obj.beta*K;
+            FRFs = zeros(numel(points),numel(omega_range));
+            for j=1:numel(omega_range)
+                omega = omega_range(j);
+                Kd = K +1i*omega*C -omega*omega*M;
+                g = zeros(numel(clamped_dofs),1);
+                [d, ~, ~] = obj.dirichlet_linear_solve(Kd, F, g, clamped_dofs);
+                FRFs(:,j) = d(points);
+            end
+        end
+        
+        %% Utility Functions
     end
-    
 end

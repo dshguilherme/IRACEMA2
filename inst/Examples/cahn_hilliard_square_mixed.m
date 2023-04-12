@@ -21,9 +21,6 @@ domain.degree_elevate(1,2);
 domain.knot_refine(Xi,1);
 domain.knot_refine(Xi,2);
 
-% Initial condition
-initial_c = 0.5 +0.05.*randn(numel(domain.points),1);
-
 % Assembler
 max_steps = 10000;
 theta = 1;

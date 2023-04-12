@@ -31,7 +31,7 @@ classdef Assembler < handle
                 
                 case "gauss"
                     for i=1:obj.domain.rank
-                        [qp, qw] = gaussian_quadrature(obj.domain.p(i));
+                        [qp, qw] = gaussian_quadrature(obj.domain.p(i)+1);
                         qpcell{i,1} = qp;
                         qpcell{i,2} = qw;
                     end
@@ -99,6 +99,81 @@ classdef Assembler < handle
             
         end
         
+function [qpoints, qweights] = boundary_quad_rule(obj,side)
+    if mod(side,2) == 0
+        b = 1;
+    else
+        b = -1;
+    end
+    idx = round(side/2);
+    n_idx = setdiff(1:obj.domain.rank, idx);
+    
+    qpoints = cell(obj.domain.rank,1);
+    qweights = qpoints;
+    
+    for i=1:obj.domain.rank
+        [qp, qw] = gaussian_quadrature(obj.domain.p(i)+1);
+        qpcell{i,1} = qp;
+        qpcell{i,2} = qw;
+    end
+    qpcell{idx,1} = b*ones(size(qp));
+    qpcell{idx,2} = ones(size(qp));
+    
+    switch obj.domain.rank
+            case 1
+
+                qpoints = qpcell{1,1};
+                qpoints = qpoints(:);
+                qweights = qpcell{1,2};
+                qweights = qweights(:);
+
+            case 2
+
+                qu = qpcell{1,1};
+                wu = qpcell{1,2};
+                qv = qpcell{2,1};
+                wv = qpcell{2,2};
+
+                n_quad = zeros(2,1);
+                n_quad(1) = length(qu);
+                n_quad(2) = length(qv);
+                n_quad = prod(n_quad);
+
+                qpoints = zeros(n_quad,2);
+                qweights = zeros(n_quad,1);
+                for n =1:n_quad
+                   [i,j] = ind2sub([length(qu),length(qv)],n);
+                   qpoints(n,:) = [qu(i),qv(j)];
+                   qweights(n) = wu(i)*wv(j);
+                end
+
+            case 3
+
+                qu = qpcell{1,1};
+                wu = qpcell{1,2};
+                qv = qpcell{2,1};
+                wv = qpcell{2,2};
+                qw = qpcell{3,1};
+                ww = qpcell{3,2};
+
+                n_quad = zeros(3,1);
+                n_quad(1) = length(qu);
+                n_quad(2) = length(qv);
+                n_quad(3) = length(qw);
+                n_quad = prod(n_quad);
+
+                qpoints = zeros(n_quad,3);
+                qweights = zeros(n_quad,1);
+
+                for n=1:n_quad
+                    [i,j,k] = ind2sub([length(qu),length(qv),length(qw)],n);
+                    qpoints(n,:) = [qu(i),qv(j),qw(k)];
+                    qweights(n) = wu(i)*wv(j)*ww(k);
+                end
+
+    end
+end
+        
         function [global_basis_index, element_local_mapping, element_ranges, ...
                 location_matrix, qp, qw, n_quad, ndof, nel_dof, nel] = preLoopParser(obj)
             d = obj.dimensions;
@@ -138,99 +213,99 @@ classdef Assembler < handle
                     
         end
         
-        function [qpoints, qweights] = boundary_quad_rule(obj)
-            qpoints = cell(obj.domain.rank*2,1);
-            qweights = qpoints;
-            
-            for i=1:obj.domain.rank
-                [qp, qw] = gaussian_quadrature(2*obj.domain.p(i) +1);
-                qpcell{i,1} = qp;
-                qpcell{i,2} = qw;
-            end
-            
-            switch obj.domain.rank
-                case 1
-                    error("For boundaries of 1D geometries, use a Dirichlet Boundary Condition");
-                
-                case 2
-                    qpoints = cell(4,1);
-                    qweights = cell(4,1);
-                    qu = qpcell{1,1};
-                    wu = qpcell{1,2};
-                    qv = qpcell{2,1};
-                    wv = qpcell{2,2};
-                    
-                    b1 = ones(size(qu));
-                    b2 = ones(size(qu));
-                    qpoints{3} = [qu, -b1];                   
-                    qweights{3} = wu;
-                    qpoints{4} = [qu, b2];
-                    qweights{4} = wu;
-                    
-                    
-                    b1 = ones(size(qv));
-                    b2 = ones(size(qv));
-                    qpoints{1} = [-b1, qv];
-                    qweights{1} = wv;
-                    qpoints{2} = [b2, qv];
-                    qweights{2} = wv;
-                
-                case 3                   
-                    qpoints = cell(6,1);
-                    qweights = cell(6,1);
-                    qu = qpcell{1,1};
-                    wu = qpcell{1,2};
-                    qv = qpcell{2,1};
-                    wv = qpcell{2,2};
-                    qw = qpcell{3,1};
-                    ww = qpcell{3,2};
-                    
-                    nquad = length(qv)*length(qw);
-                    tmp1 = zeros(nquad,3);
-                    tmp2 = tmp1;
-                    tmp3 = zeros(nquad,1);
-                    for n=1:n_quad
-                        [i,j] = ind2sub([length(qv),length(qw)],n);
-                        tmp1(n,:) = [-1 qv(i) qw(j)];
-                        tmp2(n,:) = [1 qv(i) qw(j)];
-                        tmp3(n) = wv(i)*ww(j);
-                    end
-                    qpoints{1} = tmp1;
-                    qpoints{2} = tmp2;
-                    qweights{1} = tmp3;
-                    qweights{2} = tmp3;
-                    
-                    nquad = length(qu)*length(qw);
-                    tmp1 = zeros(nquad,3);
-                    tmp2 = tmp1;
-                    tmp3 = zeros(nquad,1);
-                    for n=1:n_quad
-                        [i,j] = ind2sub([length(qu),length(qw)],n);
-                        tmp1(n,:) = [qu(i) -1 qw(j)];
-                        tmp2(n,:) = [qu(i) 1 qw(j)];
-                        tmp3(n) = wu(i)*ww(j);
-                    end
-                    qpoints{3} = tmp1;
-                    qpoints{4} = tmp2;
-                    qweights{3} = tmp3;
-                    qweights{4} = tmp3;
-                    
-                  nquad = length(qu)*length(qv);
-                    tmp1 = zeros(nquad,3);
-                    tmp2 = tmp1;
-                    tmp3 = zeros(nquad,1);
-                    for n=1:n_quad
-                        [i,j] = ind2sub([length(qu),length(qv)],n);
-                        tmp1(n,:) = [qu(i) qv(j) -1];
-                        tmp2(n,:) = [qu(i) qv(j) 1];
-                        tmp3(n) = wu(i)*wv(j);
-                    end
-                    qpoints{5} = tmp1;
-                    qpoints{6} = tmp2;
-                    qweights{5} = tmp3;
-                    qweights{6} = tmp3;     
-            end
-        end
+%         function [qpoints, qweights] = boundary_quad_rule(obj)
+%             qpoints = cell(obj.domain.rank*2,1);
+%             qweights = qpoints;
+%             
+%             for i=1:obj.domain.rank
+%                 [qp, qw] = gaussian_quadrature(2*obj.domain.p(i) +1);
+%                 qpcell{i,1} = qp;
+%                 qpcell{i,2} = qw;
+%             end
+%             
+%             switch obj.domain.rank
+%                 case 1
+%                     error("For boundaries of 1D geometries, use a Dirichlet Boundary Condition");
+%                 
+%                 case 2
+%                     qpoints = cell(4,1);
+%                     qweights = cell(4,1);
+%                     qu = qpcell{1,1};
+%                     wu = qpcell{1,2};
+%                     qv = qpcell{2,1};
+%                     wv = qpcell{2,2};
+%                     
+%                     b1 = ones(size(qu));
+%                     b2 = ones(size(qu));
+%                     qpoints{3} = [qu, -b1];                   
+%                     qweights{3} = wu;
+%                     qpoints{4} = [qu, b2];
+%                     qweights{4} = wu;
+%                     
+%                     
+%                     b1 = ones(size(qv));
+%                     b2 = ones(size(qv));
+%                     qpoints{1} = [-b1, qv];
+%                     qweights{1} = wv;
+%                     qpoints{2} = [b2, qv];
+%                     qweights{2} = wv;
+%                 
+%                 case 3                   
+%                     qpoints = cell(6,1);
+%                     qweights = cell(6,1);
+%                     qu = qpcell{1,1};
+%                     wu = qpcell{1,2};
+%                     qv = qpcell{2,1};
+%                     wv = qpcell{2,2};
+%                     qw = qpcell{3,1};
+%                     ww = qpcell{3,2};
+%                     
+%                     nquad = length(qv)*length(qw);
+%                     tmp1 = zeros(nquad,3);
+%                     tmp2 = tmp1;
+%                     tmp3 = zeros(nquad,1);
+%                     for n=1:n_quad
+%                         [i,j] = ind2sub([length(qv),length(qw)],n);
+%                         tmp1(n,:) = [-1 qv(i) qw(j)];
+%                         tmp2(n,:) = [1 qv(i) qw(j)];
+%                         tmp3(n) = wv(i)*ww(j);
+%                     end
+%                     qpoints{1} = tmp1;
+%                     qpoints{2} = tmp2;
+%                     qweights{1} = tmp3;
+%                     qweights{2} = tmp3;
+%                     
+%                     nquad = length(qu)*length(qw);
+%                     tmp1 = zeros(nquad,3);
+%                     tmp2 = tmp1;
+%                     tmp3 = zeros(nquad,1);
+%                     for n=1:n_quad
+%                         [i,j] = ind2sub([length(qu),length(qw)],n);
+%                         tmp1(n,:) = [qu(i) -1 qw(j)];
+%                         tmp2(n,:) = [qu(i) 1 qw(j)];
+%                         tmp3(n) = wu(i)*ww(j);
+%                     end
+%                     qpoints{3} = tmp1;
+%                     qpoints{4} = tmp2;
+%                     qweights{3} = tmp3;
+%                     qweights{4} = tmp3;
+%                     
+%                   nquad = length(qu)*length(qv);
+%                     tmp1 = zeros(nquad,3);
+%                     tmp2 = tmp1;
+%                     tmp3 = zeros(nquad,1);
+%                     for n=1:n_quad
+%                         [i,j] = ind2sub([length(qu),length(qv)],n);
+%                         tmp1(n,:) = [qu(i) qv(j) -1];
+%                         tmp2(n,:) = [qu(i) qv(j) 1];
+%                         tmp3(n) = wu(i)*wv(j);
+%                     end
+%                     qpoints{5} = tmp1;
+%                     qpoints{6} = tmp2;
+%                     qweights{5} = tmp3;
+%                     qweights{6} = tmp3;     
+%             end
+%         end
                     
             
         function id = id_matrix(obj)
