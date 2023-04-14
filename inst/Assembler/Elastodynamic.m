@@ -89,6 +89,36 @@ classdef Elastodynamic < Assembler & handle
             M = sparse(M);
         end
         
+        function [K, M] = assembleConcentratedMatrices(obj, gen_field_asb)
+            d = obj.dimensions;
+            [gbi, elm, er, lm, qp, qw, n_quad, ndof, nel_dof, nel] = obj.preLoopParser;
+            K = zeros(ndof);
+            M = K;
+            for e=1:nel
+                k = zeros(nel_dof*d);
+                m = zeros(nel_dof*d);
+                for n=1:n_quad
+                    q = qp(n,:);
+                    [R, dR, J] = FastShape(obj.domain, q, gbi, elm, er, e);
+                    Jmod = abs(J*qw(n));
+                    [c, ~, ~, ~] = gen_field_asb.localConcentrationInfo(R, ...
+                        dR, elm, e, gen_field_asb.c0, gen_field_asb.mu0);
+                    
+                    B = elementStiffness(dR, d, nel_dof);
+                    N = kron(R', eye(d));
+                    c = max(c, 0.001);
+                    D = (c^3)*obj.D0;
+                    k = k+ Jmod*(B'*D)*B;
+                    m = m+ Jmod*(c^3)*obj.rho*(N'*N);
+                end
+                idx = lm(:,e)';
+                K(idx, idx) = K(idx, idx) +k;
+                M(idx, idx) = M(idx, idx) +m;
+            end
+            K = sparse(K);
+            M = sparse(M);
+        end
+        
         function F = assembleForce(obj, f)
             d = obj.dimensions;
             [gbi, elm, er, lm, qp, qw, n_quad, ndof, nel_dof, nel] = obj.preLoopParser;
@@ -128,7 +158,7 @@ classdef Elastodynamic < Assembler & handle
                     [R, dR, J] = FastShape(obj.domain, q, gbi, elm, er, e);
                     Jmod = abs(J*qw(n));
                     for j=1:d
-                        f_e(:,j) = f_e(:,j) +Jmod*R*t(j);
+                        f_e(:,j) = f_e(:,j) +Jmod*dR(:,j)*t(j);
                     end
                 end
                 idx = lm(:,e)';
@@ -203,6 +233,66 @@ classdef Elastodynamic < Assembler & handle
             end
         end
         
+        function d = solveConcentratedElasticity(obj, gen_field_asb, f, t, ...
+                sides, g, dofs)
+            [K, ~] = obj.assembleConcentratedMatrices(gen_field_asb);
+            F = obj.assembleForce(f);
+            for i=1:numel(sides)
+                FN = obj.applyTraction(t{i}, sides(i));
+                F = F+FN;
+            end
+            [d, ~, ~] = obj.dirichlet_linear_solve(K, F, g, dofs);
+        end
+        
+        function d = solveConcentratedDynamic(obj, gen_field_asb, f, freq, dofs)
+            [K, M] = obj.assembleConcentratedMatrices(gen_field_asb);
+            F = obj.assembleForce(f);
+            C = obj.alpha*M +obj.beta*K;
+            Kd = K +1i*freq*C -freq*freq*M;
+            g = zeros(numel(dofs),1);
+            [d, ~, ~] = dirichlet_linear_solve(Kd, F, g, dofs);
+        end
+        
         %% Utility Functions
+        function [d, grad_d] = localDisplacementInfo(obj, R, dR, elm, e, d_vec)
+            ind = elm(:,e);
+            d = dot(R, d_vec(ind));
+            ndof = length(d_vec);
+            dim = ndof/obj.dimensions;
+            grad_d = zeros(obj.dimensions, 3);
+            for i=1:obj.dimensions
+                d_x = dot(d_vec(ind +(i-1)*dim), dR(:,1));
+                d_y = dot(d_vec(ind)+(i-1)*dim, dR(:,2));
+                d_z = dot(d_vec(ind)+(i-1)*dim, dR(:,3));
+                grad_d(i, :) = [d_x, d_y, d_z];
+            end
+        end
+        
+        function [eP, eK] = computeEnergies(obj, omega, d)
+            [gbi, elm, er, ~, qp, qw, n_quad, ~, ~, nel] = obj.preLoopParser;
+            eP = 0;
+            eK = 0;
+            
+            for e=1:nel
+                for n=1:n_quad
+                    q = qp(n,:);
+                    [R, dR, J] = FastShape(obj.domain, q, gbi, elm, er, e);
+                    Jmod = abs(J*qw(n));
+                    [d, grad_d] = obj.localDisplacementInfo(R, dR, elm, e, d);
+                    D = obj.D0;
+                    switch obj.dimensions
+                        case 2
+                            epsilon = [diag(grad_d); grad_d(1,2) + grad_d(2,1)]);
+                        case 3
+                            epsilon = [diag(grad_d); grad_d(2,3) + grad_d(3,2); ...
+                                grad_d(3,1) + grad_d(1,3); grad_d(2,1) +grad_d(1,2)];
+                    end
+
+                    eP = eP + Jmod*real(dot((D*epsilon), epsilon));
+                    eK = eK + obj.rho*omega*omega*dot(d, d);
+                end
+            end
+        end
+
     end
 end
