@@ -22,7 +22,7 @@ domain.knot_refine(Xi,1);
 domain.knot_refine(Xi,2);
 
 % Assembler
-max_steps = 10000;
+max_steps = 1000;
 theta = 1;
 dt = 5e-6;
 t_max = 5;

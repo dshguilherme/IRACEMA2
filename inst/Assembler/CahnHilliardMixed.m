@@ -10,6 +10,7 @@ classdef CahnHilliardMixed < Assembler & handle
         dt; % Time discretization
         fc; % Free Energy
         dfdc; % Derivative of the Free Energy
+        d2fdc; % Second derivative of the Free Energy
         timetable; % Data array for time integration
         solution_array; % Solution storage
         max_timesteps; % Maximum number of timesteps
@@ -31,6 +32,7 @@ classdef CahnHilliardMixed < Assembler & handle
             obj.timetable = zeros(max_timesteps,6); %time, dt, eTotal, eBulk, eInterface, residual norm
             obj.fc = @(c) (c^2)*((1-c)^2);
             obj.dfdc = @(c) (2*c)*(2*(c^2) -3*c +1);
+            obj.d2fdc = @(c) 2*(6*c^2 -6*c -1);
             obj.mu0 = zeros(size(obj.c0));
             obj.max_timesteps = max_timesteps;
             obj.t_max = t_max;
@@ -115,9 +117,11 @@ classdef CahnHilliardMixed < Assembler & handle
                     Jmod = abs(J*qw(n));
                     M = obj.mobility;
                     
+                    [c_1, ~, ~, ~] = obj.localConcentrationInfo(R, dR, elm, e, obj.c1, obj.mu1);
+                    df2 = obj.d2fdc(c_1);
                     k_cc = k_cc + Jmod*(R*R')/obj.dt;
                     k_cm = k_cm +Jmod*(M*(dR*dR'));
-                    k_mc = k_mc +Jmod*(-obj.lambda*(dR*dR'));
+                    k_mc = k_mc +Jmod*(-df2*(R*R') -obj.lambda*(dR*dR'));
                     k_mm = k_mm +Jmod*(R*R');
                 end
                 idx = lm(:,e)';
