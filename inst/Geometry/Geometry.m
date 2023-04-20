@@ -758,18 +758,14 @@ function dx = eval_derivative(obj, parametric_coordinate_array)
             end
 
         
-        function obj = uniform_k_refine(obj,Xi,p)
-            obj.degree_elevate(p,1);
-            obj.knot_refine(Xi,1);
-            if obj.rank > 1
-                obj.degree_elevate(p,2);
-                obj.knot_refine(Xi,2);
+        function obj = uniform_k_refine(obj,refinements,elevations)
+            for i=1:obj.rank
+                U = obj.knots{i};
+                Xi = linspace(0,1,refinements+2);
+                Xi = setdiff(U,Xi);
+                domain.degree_elevate(elevations,i);
+                domain.knot_refine(Xi,i);
             end
-            if obj.rank > 2 
-               obj.degree_elevate(p,3);
-               obj.knot_refine(Xi,3);
-            end
-            
         end
         
         function h = plot_geo(obj)
