@@ -5,7 +5,7 @@ classdef GeneralizedPhasePhield < CahnHilliardMixed & handle
         cf_asb; % Assembler of the coupled field
         d0; % Previous solution of the coupled field
         d1; % Next solution of the coupled field
-        t; % Traction vector on the coupled field
+        trac; % Traction vector on the coupled field
         sides; % Sides of the traction
         clamped_dofs; % dofs that are clamped
         force_function; % Function of (x) of the body force
@@ -14,12 +14,12 @@ classdef GeneralizedPhasePhield < CahnHilliardMixed & handle
     
     methods
         
-        function obj = GeneralizedPhasePhield(coupled_field_assembler, t, ...
+        function obj = GeneralizedPhasePhield(coupled_field_assembler, trac, ...
                 sides, clamped_dofs, force_function, eta, lambda, mobility, domain, theta, dt, t_max, max_timesteps)
             obj@CahnHilliardMixed(lambda, mobility, domain, theta, dt, t_max, max_timesteps);
             obj.cf_asb = coupled_field_assembler;
             obj.eta = eta;
-            obj.t = t;
+            obj.trac = trac;
             obj.sides = sides;
             obj.clamped_dofs = clamped_dofs;
             obj.force_function = force_function;
@@ -56,7 +56,7 @@ classdef GeneralizedPhasePhield < CahnHilliardMixed & handle
                     ds = real(dot(3*c_1*c_1*D*epsilon, epsilon));
                     dk = 3*c_1*c_1*cf.asb.rho*dot(u,u);
                     
-                    r_ec = r_ec + Jmod*(R*(c_1 - c_0)/obj.dt +M*(dR*grad_mumid'));
+                    r_ec = r_ec + Jmod*(R*(c_1 - c_0) +obj.dt*M*(dR*grad_mumid'));
                     switch option
                         case "elastic"
                             r_em = r_em +Jmod*(R*(mu_1 - df +ds) -obj.lambda*(dR*gradc1'));
@@ -94,7 +94,7 @@ classdef GeneralizedPhasePhield < CahnHilliardMixed & handle
                     D = obj.cf_asb.D0;
                     switch obj.cf_asb.dimensions
                         case 2
-                            epsilon = [diag(grad_u); grad_u(1,2) + grad_u(2,1)]);
+                            epsilon = [diag(grad_u); grad_u(1,2) + grad_u(2,1)];
                         case 3
                             epsilon = [diag(grad_u); grad_u(2,3) + grad_u(3,2); ...
                                 grad_u(3,1) + grad_u(1,3); grad_u(2,1) +grad_u(1,2)];
@@ -102,13 +102,13 @@ classdef GeneralizedPhasePhield < CahnHilliardMixed & handle
                     ds = real(dot(6*c_1*D*epsilon, epsilon));
                     dk = 6*c_1*cf.asb.rho*dot(u,u);
                     
-                    k_cc = k_cc + Jmod*(R*R')/obj.dt;
-                    k_cm = k_cm +Jmod*(M*(dR*dR'));
+                    k_cc = k_cc + Jmod*(R*R');
+                    k_cm = k_cm +Jmod*(M*(dR*dR'))*obj.dt;
                     switch option
                         case "elastic"
-                            k_mc = k_mc +Jmod*(obj.eta*ds -df2)*(R*R') -obj.lambda*(dR*dR'));
+                            k_mc = k_mc +Jmod*((obj.eta*ds -df2)*(R*R') -obj.lambda*(dR*dR'));
                         case "dynamic"
-                            k_mc = k_mc +Jmod*(obj.eta*(ds-dk) -df2)*(R*R') -obj.lambda*(dR*dR'));
+                            k_mc = k_mc +Jmod*((obj.eta*(ds-dk) -df2)*(R*R') -obj.lambda*(dR*dR'));
                     end
                     k_mm = k_mm +Jmod*(R*R');
                 end
@@ -127,7 +127,7 @@ classdef GeneralizedPhasePhield < CahnHilliardMixed & handle
             switch option
                 case "elastic"
                     d = obj.cf_asb.solveConcentratedElasticity(obj, obj.force_function, ...
-                        obj.t, obj.sides, g, obj.clamped_dofs);
+                        obj.trac, obj.sides, g, obj.clamped_dofs);
                 case "dynamic"
                     d = obj.cf_asb.solveConcentratedDynamic(obj, obj.force_function, ...
                         obj.frequency, obj.clamped_dofs);
@@ -144,7 +144,7 @@ classdef GeneralizedPhasePhield < CahnHilliardMixed & handle
             steps = 1;
             while (t < obj.t_max) && (steps < obj.maxtimesteps)
                 t = t+obj.dt;
-                [converged, n_steps, res_norm] = obj.staggeredTimeStep(40, option);
+                [converged, n_steps, res_norm] = obj.staggeredTimeStep(obj.newton_max_steps, option);
                 if converged
                     obj.c0 = obj.c1;
                     obj.solution_array(:,steps) = obj.c1;
@@ -184,7 +184,7 @@ classdef GeneralizedPhasePhield < CahnHilliardMixed & handle
             for i=1:max_corrections+1
                 residual = obj.assembleStaggeredResidual(option);
                 res_norm = norm(residual);
-                if res_norm > 1e-4
+                if res_norm > obj.res_tol
                     converged = 1;
                     break
                 end
@@ -194,10 +194,6 @@ classdef GeneralizedPhasePhield < CahnHilliardMixed & handle
                 obj.mu1 = obj.mu1 +u(ndof+1:end);
             end
             n_steps = i;
-        end
-
-                    
-                    
         end
         
         function monolythicTimeLoop(obj)

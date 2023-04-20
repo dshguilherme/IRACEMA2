@@ -15,6 +15,8 @@ classdef CahnHilliardMixed < Assembler & handle
         solution_array; % Solution storage
         max_timesteps; % Maximum number of timesteps
         t_max; % Maximum time
+        res_tol; % Acceptable tolerance for non-linear iteration
+        newton_max_steps; % Maximum steps on newton iterations
     end
     
     methods
@@ -38,6 +40,8 @@ classdef CahnHilliardMixed < Assembler & handle
             obj.t_max = t_max;
             [eT, eB, eI] = obj.computeEnergies;
             obj.timetable(1,:) = [0, obj.dt, eT, eB, eI, 1];
+            obj.res_tol = 1e-4; % default residual tolerance
+            obj.newton_max_steps = 30; % default maximum number of newton steps
         end
         
         % Stochastic Initial conditions. Might want to change this for
@@ -90,7 +94,7 @@ classdef CahnHilliardMixed < Assembler & handle
                     df = obj.dfdc(c_1);
                     M = obj.mobility;
                     
-                    r_ec = r_ec + Jmod*(R*(c_1 - c_0)/obj.dt +M*(dR*grad_mumid'));
+                    r_ec = r_ec + Jmod*(R*(c_1 - c_0) +obj.dt*M*(dR*grad_mumid'));
                     r_em = r_em +Jmod*(R*(mu_1 - df) -obj.lambda*(dR*gradc1'));
                 end
                 idx = lm(:,e)';
@@ -118,10 +122,11 @@ classdef CahnHilliardMixed < Assembler & handle
                     M = obj.mobility;
                     
                     [c_1, ~, ~, ~] = obj.localConcentrationInfo(R, dR, elm, e, obj.c1, obj.mu1);
-                    df2 = obj.d2fdc(c_1);
-                    k_cc = k_cc + Jmod*(R*R')/obj.dt;
-                    k_cm = k_cm +Jmod*(M*(dR*dR'));
-                    k_mc = k_mc +Jmod*(-df2*(R*R') -obj.lambda*(dR*dR'));
+%                     df2 = obj.d2fdc(c_1);
+                    k_cc = k_cc + Jmod*(R*R');
+                    k_cm = k_cm +Jmod*(M*(dR*dR'))*obj.dt;
+%                     k_mc = k_mc +Jmod*(-df2*(R*R') -obj.lambda*(dR*dR'));
+                    k_mc = k_mc +Jmod*(-obj.lambda*(dR*dR'));
                     k_mm = k_mm +Jmod*(R*R');
                 end
                 idx = lm(:,e)';
@@ -144,7 +149,7 @@ classdef CahnHilliardMixed < Assembler & handle
             for i=1:max_corrections+1
                 residual = obj.assembleResidual;
                 res_norm = norm(residual);
-                if res_norm < 1e-4
+                if res_norm < obj.res_tol
                     converged = 1;
                     break
                 end
@@ -162,14 +167,14 @@ classdef CahnHilliardMixed < Assembler & handle
             steps = 1;
             while (t < obj.t_max) && (steps < obj.max_timesteps)
                 t = t+obj.dt;
-                [converged, n_steps, res_norm] = obj.timeStep(40);
+                [converged, n_steps, res_norm] = obj.timeStep(obj.newton_max_steps);
                 if converged
                     obj.c0 = obj.c1;
                     [eT, eB, eI] = obj.computeEnergies;
                     obj.timetable(steps,:) = [t, obj.dt, eT, eB, eI, res_norm];
                     obj.solution_array(:,steps) = obj.c1;
                     fprintf("Step: %i | Time: %.2e | dt: %.2e | Residual Norm: %.2e \n", steps, t, obj.dt , res_norm)
-                    if n_steps < 5
+                    if n_steps < 7
                         obj.dt = 1.1*obj.dt;
                     end
                     steps = steps+1;
