@@ -755,16 +755,16 @@ function dx = eval_derivative(obj, parametric_coordinate_array)
                             end
                         end
                 end 
-            end
+        end
 
         
         function obj = uniform_k_refine(obj,refinements,elevations)
             for i=1:obj.rank
                 U = obj.knots{i};
                 Xi = linspace(0,1,refinements+2);
-                Xi = setdiff(U,Xi);
-                domain.degree_elevate(elevations,i);
-                domain.knot_refine(Xi,i);
+                Xi = setdiff(Xi,U);
+                obj.degree_elevate(elevations,i);
+                obj.knot_refine(Xi,i);
             end
         end
         

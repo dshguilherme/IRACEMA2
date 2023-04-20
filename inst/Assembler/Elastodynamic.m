@@ -282,7 +282,7 @@ classdef Elastodynamic < Assembler & handle
                     D = obj.D0;
                     switch obj.dimensions
                         case 2
-                            epsilon = [diag(grad_d); grad_d(1,2) + grad_d(2,1)]);
+                            epsilon = [diag(grad_d); grad_d(1,2) + grad_d(2,1)];
                         case 3
                             epsilon = [diag(grad_d); grad_d(2,3) + grad_d(3,2); ...
                                 grad_d(3,1) + grad_d(1,3); grad_d(2,1) +grad_d(1,2)];

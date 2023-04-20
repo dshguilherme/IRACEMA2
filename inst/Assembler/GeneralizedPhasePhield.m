@@ -15,7 +15,7 @@ classdef GeneralizedPhasePhield < CahnHilliardMixed & handle
     methods
         
         function obj = GeneralizedPhasePhield(coupled_field_assembler, trac, ...
-                sides, clamped_dofs, force_function, eta, lambda, mobility, domain, theta, dt, t_max, max_timesteps)
+                sides, clamped_dofs, force_function, freq, eta, lambda, mobility, domain, theta, dt, t_max, max_timesteps)
             obj@CahnHilliardMixed(lambda, mobility, domain, theta, dt, t_max, max_timesteps);
             obj.cf_asb = coupled_field_assembler;
             obj.eta = eta;
@@ -23,6 +23,7 @@ classdef GeneralizedPhasePhield < CahnHilliardMixed & handle
             obj.sides = sides;
             obj.clamped_dofs = clamped_dofs;
             obj.force_function = force_function;
+            obj.frequency = freq;
         end
         
         %% Assembly
@@ -48,13 +49,13 @@ classdef GeneralizedPhasePhield < CahnHilliardMixed & handle
                     D = obj.cf_asb.D0;
                     switch obj.cf_asb.dimensions
                         case 2
-                            epsilon = [diag(grad_u); grad_u(1,2) + grad_u(2,1)]);
+                            epsilon = [diag(grad_u); grad_u(1,2) + grad_u(2,1)];
                         case 3
                             epsilon = [diag(grad_u); grad_u(2,3) + grad_u(3,2); ...
                                 grad_u(3,1) + grad_u(1,3); grad_u(2,1) +grad_u(1,2)];
                     end
                     ds = real(dot(3*c_1*c_1*D*epsilon, epsilon));
-                    dk = 3*c_1*c_1*cf.asb.rho*dot(u,u);
+                    dk = 3*c_1*c_1*obj.cf_asb.rho*dot(u,u);
                     
                     r_ec = r_ec + Jmod*(R*(c_1 - c_0) +obj.dt*M*(dR*grad_mumid'));
                     switch option
@@ -139,17 +140,17 @@ classdef GeneralizedPhasePhield < CahnHilliardMixed & handle
         
         %% Time Integration
         function staggeredTimeLoop(obj, option)
-            obj.d0 = obj.solveCoupledField(obj, option);
+            obj.d0 = obj.solveCoupledField(option);
             t = 0;
             steps = 1;
-            while (t < obj.t_max) && (steps < obj.maxtimesteps)
+            while (t < obj.t_max) && (steps < obj.max_timesteps)
                 t = t+obj.dt;
                 [converged, n_steps, res_norm] = obj.staggeredTimeStep(obj.newton_max_steps, option);
                 if converged
                     obj.c0 = obj.c1;
                     obj.solution_array(:,steps) = obj.c1;
                     [~, eB, eI] = obj.computeEnergies;
-                    obj.d0 = obj.solveCoupledField(obj, option);
+                    obj.d0 = obj.solveCoupledField(option);
                     [eP, eK] = obj.cf_asb.computeEnergies(obj.frequency, obj.d0);
                     switch option
                         case "elastic"
