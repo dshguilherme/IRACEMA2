@@ -8,12 +8,12 @@ h = 1;
 domain = bs_rectangle(L,h);
 
 % Refinement
-refinements = 6;
+refinements = 4;
 elevations = 1;
 domain.uniform_k_refine(refinements, elevations);
 
 %% Material properties
-lambda = 0.05;
+lambda = 0.001;
 mobility = 1;
 eta = 0.5;
 
@@ -25,9 +25,9 @@ alpha = 0;
 beta = 0;
 
 %% Assemblers
-max_steps = 900;
+max_steps = 200;
 theta = 1;
-dt = 5e-8;
+dt = 5e-6;
 t_max = 5;
 frequency = 0;
 cf_asb = Elastodynamic(YOUNG, POISSON, rho, alpha, beta, "gauss", 2, domain);
@@ -57,9 +57,9 @@ gen_asb = GeneralizedPhasePhield(cf_asb, trac, ...
                 sides, clamped_dofs, force_function, frequency, eta, lambda, ...
                 mobility, domain, theta, dt, t_max, max_steps);
 
-            gen_asb.res_tol = 1e-3;
+gen_asb.res_tol = 1e-3;
 gen_asb.newton_max_steps = 40;
-
+gen_asb.mode = "GMRES";
 %% Solving
 option = "elastic";
 gen_asb.staggeredTimeLoop(option)
