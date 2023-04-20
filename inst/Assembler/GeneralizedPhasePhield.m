@@ -204,7 +204,42 @@ classdef GeneralizedPhasePhield < CahnHilliardMixed & handle
         end
         
         %% Auxiliary Functions
-        
+        function plotEvolution(obj, option)
+                t_array = obj.timetable(:,1);
+                dt_array = obj.timetable(:,2);
+                eT = obj.timetable(:,3);
+                eB = obj.timetable(:,4);
+                eI = obj.timetable(:,5);
+                eP = obj.timetable(:,6);
+                if option == "dynamic"
+                    eK = obj.timetable(:,7);
+                end
+                figure(3)
+                loglog(t_array,dt_array)
+                set(gca, 'FontSize',18)
+                ylabel('dt [s]', 'FontWeight', 'bold', 'FontSize', 23)
+                xlabel('time [s]', 'FontWeight', 'bold', 'FontSize', 23)
+                title('Time Adaptativity', 'FontWeight', 'bold', 'FontSize', 23)
+                grid on
+                
+                figure(4)
+                hold on
+                plot(t_array,eT, 'LineWidth', 3)
+                plot(t_array,eB, 'LineWidth', 3)
+                plot(t_array,eI, 'LineWidth', 3)
+                plot(t_array,eP, 'LineWidth', 3)
+                if option == "dynamic"
+                    plot(t_array,eK, 'LineWidth', 3)
+                    legend('Total Energy', 'Bulk Energy', 'Interface Energy', 'Elastic Energy', 'Kinetic Energy')
+                else
+                    legend('Total Energy', 'Bulk Energy', 'Interface Energy', 'Elastic Energy')
+                end
+                set(gca, 'FontSize', 18)
+                ylabel('Energy [J]', 'FontWeight', 'bold', 'FontSize', 23)
+                xlabel('time [s]', 'FontWeight', 'bold', 'FontSize', 23)
+                title('Free Energy Functional', 'FontWeight', 'bold', 'FontSize', 23)
+                grid on
+           end
         
         
         
