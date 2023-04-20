@@ -8,12 +8,12 @@ h = 1;
 domain = bs_rectangle(L,h);
 
 % Refinement
-refinements = 4;
+refinements = 3;
 elevations = 1;
 domain.uniform_k_refine(refinements, elevations);
 
 %% Material properties
-lambda = 0.001;
+lambda = 0.01;
 mobility = 1;
 eta = 0.5;
 
@@ -41,7 +41,16 @@ clamped_dofs = clamped_dofs(:);
 g = zeros(size(clamped_dofs));
 sides = [2];
 trac = {[0 0 0]}; % Traction
-force_function = @(x) cantileverForce(x);
+
+h1 = 0.75;
+h2 = 0.25;
+intensity = 1e6;
+P = domain.points;
+dx = P{end} - P{end-1};
+dx = dx(1);
+force_L = L-dx;
+force_function = @(x) cantileverForceAdjust(x, force_L, h1, h2, intensity);
+
 
 
 gen_asb = GeneralizedPhasePhield(cf_asb, trac, ...
@@ -53,7 +62,7 @@ gen_asb.newton_max_steps = 40;
 %% Solving
 option = "elastic";
 gen_asb.staggeredTimeLoop(option)
-solution = TimeDependentSolution(asb, asb.solution_array);
+solution = TimeDependentSolution(gen_asb, gen_asb.solution_array);
 clearvars -except asb solution
 save('gen_field_elastic.mat')
 solution.snapSolution('gen_field_test_',10);
