@@ -8,7 +8,7 @@ h = 1;
 domain = bs_rectangle(L,h);
 
 % Refinement
-refinements = 6;
+refinements = 8;
 elevations = 1;
 domain.uniform_k_refine(refinements, elevations);
 
