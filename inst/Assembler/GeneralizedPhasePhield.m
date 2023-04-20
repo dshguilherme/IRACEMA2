@@ -24,6 +24,9 @@ classdef GeneralizedPhasePhield < CahnHilliardMixed & handle
             obj.clamped_dofs = clamped_dofs;
             obj.force_function = force_function;
             obj.frequency = freq;
+            tmp = obj.timetable(1,:);
+            obj.timetable = zeros(max_timesteps,8); %time, dt, eT, eB, eI, eP, eK, res_norm
+            obj.timetable(1,1:6) = tmp;
         end
         
         %% Assembly
@@ -101,7 +104,7 @@ classdef GeneralizedPhasePhield < CahnHilliardMixed & handle
                                 grad_u(3,1) + grad_u(1,3); grad_u(2,1) +grad_u(1,2)];
                     end
                     ds = real(dot(6*c_1*D*epsilon, epsilon));
-                    dk = 6*c_1*cf.asb.rho*dot(u,u);
+                    dk = 6*c_1*obj.cf_asb.rho*dot(u,u);
                     
                     k_cc = k_cc + Jmod*(R*R');
                     k_cm = k_cm +Jmod*(M*(dR*dR'))*obj.dt;
@@ -155,7 +158,7 @@ classdef GeneralizedPhasePhield < CahnHilliardMixed & handle
                     switch option
                         case "elastic"
                             eT = eB+eI+eP;
-                            obj.timetable(steps,:) = [t, obj.dt, eT, eB, eI, eP, res_norm];
+                            obj.timetable(steps,:) = [t, obj.dt, eT, eB, eI, eP, 0, res_norm];
                         case "dynamic"
                             eT = eB+eI+eP+eK;
                             obj.timetable(steps,:) = [t, obj.dt, eT, eB, eI, eP, eK, res_norm];
@@ -185,11 +188,11 @@ classdef GeneralizedPhasePhield < CahnHilliardMixed & handle
             for i=1:max_corrections+1
                 residual = obj.assembleStaggeredResidual(option);
                 res_norm = norm(residual);
-                if res_norm > obj.res_tol
+                if res_norm < obj.res_tol
                     converged = 1;
                     break
                 end
-                tangent = obj.assembleStaggeredTangent;
+                tangent = obj.assembleStaggeredTangent(option);
                 u = tangent\(-residual);
                 obj.c1 = obj.c1 +u(1:ndof);
                 obj.mu1 = obj.mu1 +u(ndof+1:end);

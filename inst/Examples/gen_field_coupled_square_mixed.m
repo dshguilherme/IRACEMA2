@@ -8,7 +8,7 @@ h = 1;
 domain = bs_rectangle(L,h);
 
 % Refinement
-refinements = 18;
+refinements = 4;
 elevations = 1;
 domain.uniform_k_refine(refinements, elevations);
 
@@ -53,3 +53,7 @@ gen_asb.newton_max_steps = 40;
 %% Solving
 option = "elastic";
 gen_asb.staggeredTimeLoop(option)
+solution = TimeDependentSolution(asb, asb.solution_array);
+clearvars -except asb solution
+save('gen_field_elastic.mat')
+solution.snapSolution('gen_field_test_',10);
