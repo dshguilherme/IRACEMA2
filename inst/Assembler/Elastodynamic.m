@@ -278,7 +278,7 @@ classdef Elastodynamic < Assembler & handle
                     q = qp(n,:);
                     [R, dR, J] = FastShape(obj.domain, q, gbi, elm, er, e);
                     Jmod = abs(J*qw(n));
-                    [d, grad_d] = obj.localDisplacementInfo(R, dR, elm, e, d);
+                    [d_local, grad_d] = obj.localDisplacementInfo(R, dR, elm, e, d);
                     D = obj.D0;
                     switch obj.dimensions
                         case 2
@@ -289,7 +289,7 @@ classdef Elastodynamic < Assembler & handle
                     end
 
                     eP = eP + Jmod*real(dot((D*epsilon), epsilon));
-                    eK = eK + obj.rho*omega*omega*dot(d, d);
+                    eK = eK + obj.rho*omega*omega*dot(d_local, d_local);
                 end
             end
         end
