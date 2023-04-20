@@ -8,7 +8,7 @@ h = 1;
 domain = bs_rectangle(L,h);
 
 % Refinement
-refinements = 8;
+refinements = 4;
 elevations = 1;
 domain.uniform_k_refine(refinements, elevations);
 
@@ -17,13 +17,15 @@ lambda = 0.001;
 mobility = 1;
 
 % Assembler
-max_steps = 3000;
+max_steps = 200;
 theta = 1;
 dt = 5e-6;
 t_max = 5;
 asb = CahnHilliardMixed(lambda, mobility, domain, theta, dt, t_max, max_steps);
 asb.res_tol = 1e-3;
 asb.newton_max_steps = 40;
+asb.mode = "GMRES";
+
 
 %% Solving
 asb.timeLoop;

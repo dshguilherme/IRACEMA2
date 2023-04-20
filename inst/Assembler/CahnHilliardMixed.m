@@ -17,6 +17,9 @@ classdef CahnHilliardMixed < Assembler & handle
         t_max; % Maximum time
         res_tol; % Acceptable tolerance for non-linear iteration
         newton_max_steps; % Maximum steps on newton iterations
+        mode; % Native division or  preconditioned GMRES
+        gmres_tol = 1e-5;
+        gmres_maxit = 30;
     end
     
     methods
@@ -42,6 +45,7 @@ classdef CahnHilliardMixed < Assembler & handle
             obj.timetable(1,:) = [0, obj.dt, eT, eB, eI, 1];
             obj.res_tol = 1e-4; % default residual tolerance
             obj.newton_max_steps = 30; % default maximum number of newton steps
+            obj.mode = "Newton";
         end
         
         % Stochastic Initial conditions. Might want to change this for
@@ -154,8 +158,17 @@ classdef CahnHilliardMixed < Assembler & handle
                     break
                 end
                 tangent = obj.assembleTangent;
-
-                u = tangent\(-residual);
+                switch obj.mode
+                    case "Newton"
+                        u = tangent\(-residual);
+                    case "GMRES"
+                        [L, U] = ilu(tangent,struct('type','ilutp','droptol',1e-6));
+                        [u, flag, ~, ~, ~] = gmres(tangent,-residual,[],obj.gmres_tol,obj.gmres_maxit);
+                        if flag
+                            converged = 0;
+                            break
+                        end
+                end
                 obj.c1 = obj.c1 +u(1:ndof);
                 obj.mu1 = obj.mu1 +u(ndof+1:end);        
             end

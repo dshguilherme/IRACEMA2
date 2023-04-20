@@ -193,7 +193,17 @@ classdef GeneralizedPhasePhield < CahnHilliardMixed & handle
                     break
                 end
                 tangent = obj.assembleStaggeredTangent(option);
-                u = tangent\(-residual);
+                switch obj.mode
+                    case "Newton"
+                        u = tangent\(-residual);
+                    case "GMRES"
+                        [L, U] = ilu(tangent,struct('type','ilutp','droptol',1e-6));
+                        [u, flag, ~, ~, ~] = gmres(tangent,-residual,[],obj.gmres_tol,obj.gmres_maxit);
+                        if flag
+                            converged = 0;
+                            break
+                        end
+                end
                 obj.c1 = obj.c1 +u(1:ndof);
                 obj.mu1 = obj.mu1 +u(ndof+1:end);
             end
