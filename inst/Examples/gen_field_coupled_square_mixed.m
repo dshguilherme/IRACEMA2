@@ -8,12 +8,12 @@ h = 1;
 domain = bs_rectangle(L,h);
 
 % Refinement
-refinements = 3;
+refinements = 6;
 elevations = 1;
 domain.uniform_k_refine(refinements, elevations);
 
 %% Material properties
-lambda = 0.01;
+lambda = 0.05;
 mobility = 1;
 eta = 0.5;
 
@@ -25,9 +25,9 @@ alpha = 0;
 beta = 0;
 
 %% Assemblers
-max_steps = 3000;
+max_steps = 900;
 theta = 1;
-dt = 5e-7;
+dt = 5e-8;
 t_max = 5;
 frequency = 0;
 cf_asb = Elastodynamic(YOUNG, POISSON, rho, alpha, beta, "gauss", 2, domain);
@@ -56,13 +56,15 @@ force_function = @(x) cantileverForceAdjust(x, force_L, h1, h2, intensity);
 gen_asb = GeneralizedPhasePhield(cf_asb, trac, ...
                 sides, clamped_dofs, force_function, frequency, eta, lambda, ...
                 mobility, domain, theta, dt, t_max, max_steps);
-gen_asb.res_tol = 1e-3;
+
+            gen_asb.res_tol = 1e-3;
 gen_asb.newton_max_steps = 40;
 
 %% Solving
 option = "elastic";
 gen_asb.staggeredTimeLoop(option)
+gen_asb.plotEvolution(option)
 solution = TimeDependentSolution(gen_asb, gen_asb.solution_array);
-clearvars -except asb solution
+clearvars -except gen_asb solution
 save('gen_field_elastic.mat')
-solution.snapSolution('gen_field_test_',10);
+solution.snapSolution('gen_field_test2_',30);
