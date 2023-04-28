@@ -39,7 +39,7 @@ clamped_dofs = id(clamped_cpoints,:);
 clamped_dofs = clamped_dofs(:);
 g = zeros(size(clamped_dofs));
 
-t = {[0 -1e6 0]}; % Traction
+t = {[0 0 0]}; % Traction
 sides = [2];
 
 %% Solutions
@@ -47,7 +47,7 @@ sides = [2];
 % Elasticity
 d_traction = asb.solveLinearElasticity(@(x) [0 0 0], t, sides, g, clamped_dofs);
 d_force = asb.solveLinearElasticity(@(x) cantileverForce(x), t, sides, g, clamped_dofs);
-
+[K, M, F] = asb.assembleSystem(@(x) cantileverForce(x));
 % Modal
 num_modes = 10;
 [modes, omega, modal_solution] = asb.naturalModes(sides, num_modes);

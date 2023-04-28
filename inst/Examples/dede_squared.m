@@ -54,20 +54,17 @@ force_function = @(x) cantileverForceAdjust(x, force_L, h1, h2, intensity);
 
 
 
-gen_asb = GeneralizedPhasePhield(cf_asb, trac, h0, ...
+gen_asb = DedeMixed(cf_asb, trac, h0, ...
                 sides, clamped_dofs, force_function, intensity, frequency, eta, lambda, ...
                 mobility, domain, theta, dt, t_max, max_steps);
 
 gen_asb.res_tol = 1e-3;
-gen_asb.newton_max_steps = 30;
+gen_asb.newton_max_steps = 8;
 gen_asb.mode = "Newton";
 gen_asb.gmres_tol = 1e-4;
 gen_asb.gmres_maxit = 90;
+
 %% Solving
-option = "elastic";
-gen_asb.timeLoop(option);
-gen_asb.plotEvolution;
-solution = TimeDependentSolution(gen_asb, gen_asb.solution_array);
-clearvars -except gen_asb solution
-save('gen_field_elastic.mat')
-solution.snapSolution('gen_field_test2_',30);
+gen_asb.timeLoop
+
+

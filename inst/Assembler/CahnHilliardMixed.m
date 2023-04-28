@@ -183,6 +183,7 @@ classdef CahnHilliardMixed < Assembler & handle
                 [converged, n_steps, res_norm] = obj.timeStep(obj.newton_max_steps);
                 if converged
                     obj.c0 = obj.c1;
+                    obj.mu0 = obj.mu1;
                     [eT, eB, eI] = obj.computeEnergies;
                     obj.timetable(steps,:) = [t, obj.dt, eT, eB, eI, res_norm];
                     obj.solution_array(:,steps) = obj.c1;
@@ -193,6 +194,7 @@ classdef CahnHilliardMixed < Assembler & handle
                     steps = steps+1;
                 else
                     obj.c1 = obj.c0;
+                    obj.mu1 = obj.mu0;
                     t = t-obj.dt;
                     obj.dt = 0.5*obj.dt;
                 end

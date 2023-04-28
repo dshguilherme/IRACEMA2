@@ -74,7 +74,7 @@ classdef Elastodynamic < Assembler & handle
                     q = qp(n,:);
                     [R, dR, J] = FastShape(obj.domain, q, gbi, elm, er, e);
                     Jmod = abs(J*qw(n));
-                    B = elementStiffness(dR, d, nel_dof);
+                    B = elementStiffness(dR, d);
                     N = kron(R', eye(d));
                     D = obj.D0;
                     k = k +Jmod*(B'*D)*B;
@@ -104,7 +104,7 @@ classdef Elastodynamic < Assembler & handle
                     [c, ~, ~, ~] = gen_field_asb.localConcentrationInfo(R, ...
                         dR, elm, e, gen_field_asb.c0, gen_field_asb.mu0);
                     
-                    B = elementStiffness(dR, d, nel_dof);
+                    B = elementStiffness(dR, d);
                     N = kron(R', eye(d));
                     c = max(c, 0.001);
                     D = (c^3)*obj.D0;
@@ -157,8 +157,10 @@ classdef Elastodynamic < Assembler & handle
                     q = qp(n,:);
                     [R, dR, J] = FastShape(obj.domain, q, gbi, elm, er, e);
                     Jmod = abs(J*qw(n));
+                    x = obj.domain.evalPointFromQuadrature(q, er, e);
+                    f = t(x);
                     for j=1:d
-                        f_e(:,j) = f_e(:,j) +Jmod*dR(:,j)*t(j);
+                        f_e(:,j) = f_e(:,j) +Jmod*R*f(j);
                     end
                 end
                 idx = lm(:,e)';
@@ -254,19 +256,51 @@ classdef Elastodynamic < Assembler & handle
         end
         
         %% Utility Functions
-        function [d, grad_d] = localDisplacementInfo(obj, R, dR, elm, e, d_vec)
+        function [d, epsilon, sigma] = localDisplacementInfo(obj, R, dR, elm, e, d_vec)
+            d = zeros(obj.dimensions,1);
             ind = elm(:,e);
-            d = dot(R, d_vec(ind));
             ndof = length(d_vec);
             dim = ndof/obj.dimensions;
             grad_d = zeros(obj.dimensions, 3);
             for i=1:obj.dimensions
-                d_x = dot(d_vec(ind +(i-1)*dim), dR(:,1));
-                d_y = dot(d_vec(ind)+(i-1)*dim, dR(:,2));
-                d_z = dot(d_vec(ind)+(i-1)*dim, dR(:,3));
-                grad_d(i, :) = [d_x, d_y, d_z];
+                d(i) = dot(R, d_vec(ind +(i-1)*dim));
+                for j=1:3
+                    grad_d(i,j) = dot(dR(:,j), d_vec(ind +(i-1)*dim));
+                end
+            end
+            switch obj.dimensions
+                case 2
+                    epsilon = [diag(grad_d); grad_d(1,2)+grad_d(2,1)];
+                case 3
+                    epsilon = [diag(grad_d); grad_d(2,3)+grad_d(3,2);
+                        grad_d(3,1)+grad_d(1,3); grad_d(2,1)+grad_d(1,2);];
+            end
+            sigma = obj.D0*epsilon;
+        end
+        
+        function L2 = errorL2(obj,d_vec, exact_error_function,mode)
+            [gbi, elm, er, lm, qp, qw, n_quad, ndof, nel_dof, nel] = obj.preLoopParser;
+            L2 = 0;
+            for e=1:nel
+                for n=1:n_quad
+                    q = qp(n,:);
+                    [R, dR, J] = FastShape(obj.domain, q, gbi, elm, er, e);
+                    Jmod = abs(J*qw(n));
+                    
+                    x = obj.domain.evalPointFromQuadrature(q, er, e);
+                    
+                    [d, ~, sigma] = obj.localDisplacementInfo(R, dR, elm, e, d_vec);
+                    
+                    if mode == 1
+                        error = (exact_error_function(x) -d)^2;
+                    else
+                        error = dot((exact_error_function(x)-sigma),(exact_error_function(x)-sigma));
+                    end
+                    L2 = L2+ Jmod*error;
+                end
             end
         end
+        
         
         function [eP, eK] = computeEnergies(obj, omega, d)
             [gbi, elm, er, ~, qp, qw, n_quad, ~, ~, nel] = obj.preLoopParser;
@@ -278,16 +312,8 @@ classdef Elastodynamic < Assembler & handle
                     q = qp(n,:);
                     [R, dR, J] = FastShape(obj.domain, q, gbi, elm, er, e);
                     Jmod = abs(J*qw(n));
-                    [d_local, grad_d] = obj.localDisplacementInfo(R, dR, elm, e, d);
+                    [d_local, epsilon] = obj.localDisplacementInfo(R, dR, elm, e, d);
                     D = obj.D0;
-                    switch obj.dimensions
-                        case 2
-                            epsilon = [diag(grad_d); grad_d(1,2) + grad_d(2,1)];
-                        case 3
-                            epsilon = [diag(grad_d); grad_d(2,3) + grad_d(3,2); ...
-                                grad_d(3,1) + grad_d(1,3); grad_d(2,1) +grad_d(1,2)];
-                    end
-
                     eP = eP + Jmod*real(dot((D*epsilon), epsilon));
                     eK = eK + obj.rho*omega*omega*dot(d_local, d_local);
                 end

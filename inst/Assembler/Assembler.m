@@ -730,6 +730,23 @@ end
             end
         end            
         
+        function [h, V] = characteristic_length(obj)
+            [gbi, elm, er, lm, qp, qw, n_quad, ndof, nel_dof, nel] = obj.preLoopParser;
+            V = zeros(nel,1);
+            for e=1:nel
+                Ve = 0;
+                for n=1:n_quad
+                    q = qp(n,:);
+                    [~, ~, J] = FastShape(obj.domain, q, gbi, elm, er, e);
+                    Jmod = abs(qw(n)*J);
+                    Ve = Ve+Jmod;
+                end
+                V(e) = Ve;
+            end
+            h = max(V.^(1/obj.dimensions));
+            V = sum(V);
+        end
+        
     end
        
         

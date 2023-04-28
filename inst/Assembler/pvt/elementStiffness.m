@@ -1,17 +1,20 @@
-function B = elementStiffness(dR, d, nel_dof)
-    B = zeros(d, nel_dof*d);
-    for i=1:d
-        B(i,i:d:end) = dR(:,i);
-    end
-    if d == 2
-        B(3,1:d:end) = dR(:,2);
-        B(3,2:d:end) = dR(:,1);
-    elseif d == 3
-        B(4,2:d:end) = dR(:,3);
-        B(4,3:d:end) = dR(:,2);
-        B(5,1:d:end) = dR(:,3);
-        B(5,3:d:end) = dR(:,1);
-        B(6,1:d:end) = dR(:,2);
-        B(6,2:d:end) = dR(:,1);
-    end
+function B = elementStiffness(dR,d)
+B = zeros((d-1)*3,length(dR)*d);
+switch d
+    case 3
+        for i=1:length(dR)
+            B(:,1+(i-1)*d:3+(i-1)*d) = [dR(i,1) 0 0;
+                0 dR(i,2) 0;
+                0 0 dR(i,3);
+                0 dR(i,3) dR(i,2);
+                dR(i,3) 0 dR(i,1);
+                dR(i,2) dR(i,1) 0];
+        end
+    case 2
+        for i=1:length(dR)
+            B(:,1+(i-1)*d:2+(i-1)*d) = [dR(i,1) 0;
+                0 dR(i,2);
+                dR(i,2) dR(i,1)];
+        end
+
 end

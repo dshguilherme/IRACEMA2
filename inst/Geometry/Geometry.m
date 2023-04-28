@@ -155,7 +155,10 @@ function dx = eval_derivative(obj, parametric_coordinate_array)
 
           switch obj.rank
               case 1
-                    U = obj.knots{1}; 
+                    U = obj.knots{1};
+                    nu = obj.n(1);
+                    pu = obj.p(1);
+                    u = parametric_coordinate_array(1);
                     su = FindSpanLinear(nu-1,pu,u,U);
 
                     P = obj.points;
@@ -942,7 +945,7 @@ function dx = eval_derivative(obj, parametric_coordinate_array)
             end
         end
         
-                       
+      
         
     end
     
